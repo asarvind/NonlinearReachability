@@ -636,6 +636,22 @@ def process():
 
     writetocpp(dynEqs, state_vars, inp_vars, params, asgn, vals)
 
+    # write state bounds
+    lbobj = open( "src/pywrite/stlb.txt", "w" )
+    ubobj = open( "src/pywrite/stub.txt", "w" )
+    for mykey in stBounds:
+        lbobj.write( str( stBounds[mykey][0] ) + " ")
+        ubobj.write( str( stBounds[mykey][1] ) + " ")
+
+    # write input bounds
+    lbobj = open( "src/pywrite/inplb.txt", "w" )
+    ubobj = open( "src/pywrite/inpub.txt", "w" )
+    for mykey in inpBounds:
+        lbobj.write( str( inpBounds[mykey][0] ) + " ")
+        ubobj.write( str( inpBounds[mykey][1] ) + " ")
+
+    
+
 processButton = tk.Button( ui, text = "Process", command = process,
                           font = tkFont.Font( size = 25 ),
                           highlightbackground = "green",
