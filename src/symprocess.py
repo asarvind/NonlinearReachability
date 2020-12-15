@@ -70,12 +70,12 @@ class writetocpp:
             self.linerr[ky] = simplify(out_expr)
             
         # filenames for writing
-        self.ConstantsFile = "Constants.cpp"
-        self.VectorFieldFile = "VectorField.cpp"
-        self.StateMatFile = "StateMat.cpp"
-        self.InputMatFile = "InputMat.cpp"
-        self.ContErrorFile = "ContError.cpp"
-        self.DimErrorFile = "DimError.cpp"
+        self.ConstantsFile = "src/pywrite/Constants.cpp"
+        self.VectorFieldFile = "src/pywrite/VectorField.cpp"
+        self.StateMatFile = "src/pywrite/StateMat.cpp"
+        self.InputMatFile = "src/pywrite/InputMat.cpp"
+        self.ContErrorFile = "src/pywrite/ContError.cpp"
+        self.DimErrorFile = "src/pywrite/DimError.cpp"
         # write constants
         f = open(self.ConstantsFile,"w")
         # write dimension of vector field

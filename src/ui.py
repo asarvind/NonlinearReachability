@@ -8,7 +8,7 @@ from symprocess import *
 #----------------------------------------------------------------------
 # create UI
 #----------------------------------------------------------------------
-os.system( "mkdir -p input" )
+os.system( "mkdir -p src/pywrite" )
 ui = tk.Tk( )
 ui.title( "Flowpipe Simulator" )
 ui.geometry( "500x250" )
@@ -619,17 +619,14 @@ def process():
         eqlist.append( eval( mykey + "- nsimplify(" + parEqs[ mykey ] + ")" ) )
 
     # values of parameters and assignments
-    valDict = solve( eqlist, tuple(params) )
-    valDict =  valDict[0] 
-    print( valDict )
+    valTuple = solve( eqlist, tuple(params) )
+    vals =  list( valTuple[0] )
     asgn = []
-    vals = []
     ind = 0
     for mypar in params:
-        myval1, myval2 = fraction( valDict[ ind ] )
+        myval1, myval2 = fraction( vals[ ind ] )
         asgn.append( str( mypar ) + " = " + "Interval(" + str( myval1 ) + "," + str( myval1 ) +
                      ")/Interval(" + str( myval2 ) + "," + str( myval2 ) + ")" + ";" )
-        vals.append( valDict[ ind ] )
         ind += 1
 
     # dynamics in symbolic form
