@@ -52,6 +52,9 @@ int main(){
     reachobj.TimeStep = tStep;
   }
 
+  // simulate
+  reachobj.simulate( T );
 
-  cout << inpbounds(0).lower() << " " << inpbounds(0).upper() << " " << reachobj.TimeStep << "\n";
+  // save traces
+  reachobj.SaveTraces();
 }

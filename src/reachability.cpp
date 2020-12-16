@@ -376,7 +376,7 @@ public:
   void SaveTraces(){
     ofstream myfile;
     // save lower bounds
-    myfile.open("lb.txt");
+    myfile.open("src/pywrite/lb.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       for(int i=0; i<N; ++i){
 	if(i==N-1){
@@ -389,7 +389,7 @@ public:
     }
     myfile.close();
     // save upper bounds
-    myfile.open("ub.txt");
+    myfile.open("src/pywrite/ub.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       for(int i=0; i<N; ++i){
 	if(i==N-1){
@@ -402,7 +402,7 @@ public:
     }
     myfile.close();
     // save time interval trace
-    myfile.open("time.txt");
+    myfile.open("src/pywrite/times.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       myfile << ((*itr).time).lower() << "," << ((*itr).time).upper() << "\n";
     }
