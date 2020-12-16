@@ -119,7 +119,7 @@ Interval pow(const Interval &x, const double &y){
 // Include dynamics
 
 // Constants StateDim and InputDim are extracted from dynamics by running python scripts
-#include "Constants.cpp"
+#include "pywrite/Constants.cpp"
 
 // Define types of vectors and Matrices
 typedef Eigen::Matrix<Interval,StateDim,StateDim> IvMatrixNNd;
@@ -135,11 +135,11 @@ typedef Eigen::Matrix<Interval,Eigen::Dynamic,Eigen::Dynamic>  IvMatrixKKd;
 
 // Function to compute vector field, continuous state and input matrices
 // and continuous error from linearization.
-#include "VectorField.cpp"
-#include "StateMat.cpp"
-#include "InputMat.cpp"
-#include "ContError.cpp"
-#include "DimError.cpp"
+#include "pywrite/VectorField.cpp"
+#include "pywrite/StateMat.cpp"
+#include "pywrite/InputMat.cpp"
+#include "pywrite/ContError.cpp"
+#include "pywrite/DimError.cpp"
 
 //======================================================================
 // Operations on interval state vectors

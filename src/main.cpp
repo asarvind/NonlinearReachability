@@ -1,0 +1,57 @@
+# include "reachability.cpp"
+
+int main(){
+  ifstream readlower, readupper, simhypar;
+  double lb, ub;
+  string line;
+  
+  // read state initial lower bounds
+  readlower.open( "src/pywrite/stlb.txt" );
+  readupper.open( "src/pywrite/stub.txt" );
+  int ind = 0;
+  IvVectorNd initstate;
+  
+  for( int i = 0; i<StateDim; ++i){
+    readlower >> lb;
+    readupper >> ub;
+    initstate( i ) = Interval( lb, ub );
+  }
+  readlower.close();
+  readupper.close();
+    
+  // read input initial lower bounds
+  readlower.open( "src/pywrite/inplb.txt" );
+  readupper.open( "src/pywrite/inpub.txt" );
+  ind = 0;
+  IvVectorMd inpbounds;
+  for( int i = 0; i<InputDim; ++i ){
+    readlower >> lb;
+    readupper >> ub;
+    inpbounds( i ) = Interval( lb, ub );
+  }
+  readlower.close();
+  readupper.close();
+
+  // read simulation hyperparameters
+  simhypar.open( "src/pywrite/simpars.txt" );
+  
+  double T; // simulation time horizon length
+  simhypar >> T;
+
+  int logDivs;
+  simhypar >> logDivs; // log_e( no. divisions )
+
+  double tStep; // time step size
+  simhypar >> tStep;
+
+  simhypar.close();
+
+  // create reachset object
+  ioureach reachobj( initstate, inpbounds, logDivs );
+  if (tStep>0){
+    reachobj.TimeStep = tStep;
+  }
+
+
+  cout << inpbounds(0).lower() << " " << inpbounds(0).upper() << " " << reachobj.TimeStep << "\n";
+}

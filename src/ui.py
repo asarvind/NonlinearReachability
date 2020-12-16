@@ -3,6 +3,7 @@ from tkinter import font as tkFont
 import tkinter.scrolledtext as st
 import pickle
 import os
+
 from symprocess import *
 
 #----------------------------------------------------------------------
@@ -11,7 +12,7 @@ from symprocess import *
 os.system( "mkdir -p src/pywrite" )
 ui = tk.Tk( )
 ui.title( "Flowpipe Simulator" )
-ui.geometry( "500x250" )
+ui.geometry( "500x220" )
 ui.configure( bg="white" )
 
 header = tk.Label( ui, text = "Flowpipe Simulator",
@@ -83,12 +84,12 @@ class stWin:
         self.stUbEntry.place( x=refPos[0]+240, y=refPos[1]+40 )
 
         self.stDisplay = st.ScrolledText( self.ui, font = tkFont.Font( size = 17 ),
-                                     height = 23, width = 32,
+                                     height = 22, width = 32,
                                      highlightbackground = "black", bg = "white")
-        self.stDisplay.place( x=refPos[0]+20, y=refPos[1]+130 )
+        self.stDisplay.place( x=refPos[0]+15, y=refPos[1]+118 )
         self.stDisplay.configure( state = "disabled" )
         
-        self.stEntryButton = tk.Button( self.ui, text = "add",  fg = "black",
+        self.stEntryButton = tk.Button( self.ui, text = "add/edit",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.stEntryButtonFn )
@@ -98,13 +99,13 @@ class stWin:
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.stDelButtonFn )
-        self.stDelButton.place( x = refPos[0]+120, y = refPos[1]+80  )
+        self.stDelButton.place( x = refPos[0]+140, y = refPos[1]+80  )
 
         self.stClButton = tk.Button( self.ui, text = "clear",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.stClButtonFn )
-        self.stClButton.place( x = refPos[0]+200, y = refPos[1]+80 )
+        self.stClButton.place( x = refPos[0]+220, y = refPos[1]+80 )
 
         # load state
         self.stDisplay.configure( state = "normal" )
@@ -185,6 +186,12 @@ editStButton = tk.Button( ui, text = "State", command = stWin,
 editStButton.place( x = startPos[0], y = startPos[1]  )
 
 
+class editstate( stWin ):
+    def __init__( self ):
+        stWin.__init__( self )
+        self.stDelButton.destroy()
+        self.stClButton.destroy()
+    
 #----------------------------------------------------------------------
 # edit input
 #----------------------------------------------------------------------
@@ -232,12 +239,12 @@ class inpWin:
         self.inpUbEntry.place( x=refPos[0]+240, y=refPos[1]+40 )
 
         self.inpDisplay = st.ScrolledText( self.ui, font = tkFont.Font( size = 17 ),
-                                     height = 23, width = 32,
+                                     height = 22, width = 32,
                                      highlightbackground = "black", bg = "white")
-        self.inpDisplay.place( x=refPos[0]+20, y=refPos[1]+130 )
+        self.inpDisplay.place( x=refPos[0]+18, y=refPos[1]+118 )
         self.inpDisplay.configure( state = "disabled" )
         
-        self.inpEntryButton = tk.Button( self.ui, text = "add",  fg = "black",
+        self.inpEntryButton = tk.Button( self.ui, text = "add/edit",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.inpEntryButtonFn )
@@ -247,13 +254,13 @@ class inpWin:
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.inpDelButtonFn )
-        self.inpDelButton.place( x = refPos[0]+120, y = refPos[1]+80  )
+        self.inpDelButton.place( x = refPos[0]+140, y = refPos[1]+80  )
 
         self.inpClButton = tk.Button( self.ui, text = "clear",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.inpClButtonFn )
-        self.inpClButton.place( x = refPos[0]+200, y = refPos[1]+80 )
+        self.inpClButton.place( x = refPos[0]+220, y = refPos[1]+80 )
         
         # load input
         self.inpDisplay.configure( state = "normal" )
@@ -327,11 +334,16 @@ class inpWin:
             
 
 editInpButton = tk.Button( ui, text = "Input", command = inpWin,
-                          font = tkFont.Font( size = 25 ),
+                          font = tkFont.Font( size = 23 ),
                           highlightbackground = "yellow",
                           bg = "white")
 editInpButton.place( x = startPos[0], y = startPos[1]+yGap  )
 
+class editinp( inpWin ):
+    def __init__( self ):
+        inpWin.__init__( self )
+        self.inpDelButton.destroy()
+        self.inpClButton.destroy()
 
 #----------------------------------------------------------------------
 # entry field for dynamics
@@ -387,7 +399,7 @@ class fieldUi:
                                   highlightbackground = "black", width = 50 )                          
         self.dynamicsEntry.place( x=xPos, y=yPos-10 )
 
-        self.dynEntryButton = tk.Button( self.ui, text = "add",  fg = "black",
+        self.dynEntryButton = tk.Button( self.ui, text = "add/edit",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 3, font = tkFont.Font( size = 15 ),
                                    command = self.stTable )
@@ -397,13 +409,13 @@ class fieldUi:
                                    highlightbackground = "green",
                                    bd = 3, font = tkFont.Font( size = 15 ),
                                    command = self.delDynamics )
-        self.dynDelButton.place( x = refPos[0]+120, y = refPos[1]+125  )
+        self.dynDelButton.place( x = refPos[0]+140, y = refPos[1]+125  )
 
         self.dynClButton = tk.Button( self.ui, text = "clear",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 3, font = tkFont.Font( size = 15 ),
                                    command = self.dynClButtonFn )
-        self.dynClButton.place( x = refPos[0]+200, y = refPos[1]+125 )
+        self.dynClButton.place( x = refPos[0]+220, y = refPos[1]+125 )
 
         # initial display
         self.dynamicsDisplay.configure( state = "normal" )
@@ -463,10 +475,21 @@ class fieldUi:
         self.ui.destroy()
 
 editDynamicsButton = tk.Button( ui, text = "Dynamics", command = fieldUi,
-                          font = tkFont.Font( size = 25 ),
+                          font = tkFont.Font( size = 23 ),
                           highlightbackground = "yellow",
                           bg = "white")
 editDynamicsButton.place( x = startPos[0], y = startPos[1]+3*yGap  )
+
+class editdyn( fieldUi ):
+    def __init__( self ):
+        fieldUi.__init__( self )
+        self.dynEntryButton[ "text" ] =  "symbolic processing completed"
+        self.dynClButton.destroy()
+        self.dynDelButton.destroy()
+        
+    def stTable( self ):
+        pass
+        
 
 #----------------------------------------------------------------------
 # edit parameter
@@ -513,7 +536,7 @@ class parWin:
         self.parDisplay.place( x=refPos[0]+20, y=refPos[1]+130 )
         self.parDisplay.configure( state = "disabled" )
         
-        self.parEntryButton = tk.Button( self.ui, text = "add",  fg = "black",
+        self.parEntryButton = tk.Button( self.ui, text = "add/edit",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.parEntryButtonFn )
@@ -523,13 +546,13 @@ class parWin:
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.parDelButtonFn )
-        self.parDelButton.place( x = refPos[0]+120, y = refPos[1]+80  )
+        self.parDelButton.place( x = refPos[0]+140, y = refPos[1]+80  )
 
         self.parClButton = tk.Button( self.ui, text = "clear",  fg = "black",
                                    highlightbackground = "green",
                                    bd = 2, font = tkFont.Font( size = 15 ),
                                    command = self.parClButtonFn )
-        self.parClButton.place( x = refPos[0]+200, y = refPos[1]+80 )
+        self.parClButton.place( x = refPos[0]+220, y = refPos[1]+80 )
         
         # load parameter
         self.parDisplay.configure( state = "normal" )
@@ -588,60 +611,52 @@ class parWin:
             
 
 editParButton = tk.Button( ui, text = "Parameter", command = parWin,
-                          font = tkFont.Font( size = 25 ),
+                          font = tkFont.Font( size = 23 ),
                           highlightbackground = "yellow",
                           bg = "white")
 editParButton.place( x = startPos[0], y = startPos[1]+2*yGap  )
 
+class editpar( parWin ):
+    def __init__( self ):
+        parWin.__init__( self )
+        self.parClButton.destroy()
+        self.parDelButton.destroy()
+        self.parEntryButton[ "text" ] =  "symbolic processing completed"
+
+    def parEntryButtonFn( self ):
+        pass0
 
 #----------------------------------------------------------------------
-# process button
+# Simulate ui
 #----------------------------------------------------------------------
-def process():
-    # state variables
-    state_vars = []
-    for mykey in stBounds:
-        state_vars.append( var( mykey ) )
+maxTimeEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
+                           height = 1, width = 5,
+                           highlightbackground = "black", bg = "white")
+maxTimeEntryLabel = tk.Label( ui, text="max. time", bg="white",
+                              font = tkFont.Font( size = 20 ) )
 
-    # input variables
-    inp_vars = []
-    for mykey in inpBounds:
-        inp_vars.append( var( mykey ) )
 
-    # parameters
-    params = []
-    for mykey in parEqs:
-        params.append( var( mykey ) )
+logDivsEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
+                           height = 1, width = 5,
+                           highlightbackground = "black", bg = "white")
+logDivsEntryLabel = tk.Label( ui, text="log_e( no. divisions )", bg="white",
+                              font = tkFont.Font( size = 20 ) )
 
-    # parametric equation list
-    eqlist = []
-    for mykey in parEqs:
-        eqlist.append( eval( mykey + "- nsimplify(" + parEqs[ mykey ] + ")" ) )
+timeStepEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
+                           height = 1, width = 5,
+                           highlightbackground = "black", bg = "white" )
+timeStepEntryLabel = tk.Label( ui, text="step size", bg="white",
+                               font = tkFont.Font( size = 20 ) )
 
-    # values of parameters and assignments
-    valTuple = solve( eqlist, tuple(params) )
-    vals =  list( valTuple[0] )
-    asgn = []
-    ind = 0
-    for mypar in params:
-        myval1, myval2 = fraction( vals[ ind ] )
-        asgn.append( str( mypar ) + " = " + "Interval(" + str( myval1 ) + "," + str( myval1 ) +
-                     ")/Interval(" + str( myval2 ) + "," + str( myval2 ) + ")" + ";" )
-        ind += 1
-
-    # dynamics in symbolic form
-    dynEqs = {}
-    for mykey in dynamics:
-        dynEqs[ mykey ] =  eval( "nsimplify(" + dynamics[ mykey ] + ")" )
-
-    writetocpp(dynEqs, state_vars, inp_vars, params, asgn, vals)
-
+def simulate():
     # write state bounds
     lbobj = open( "src/pywrite/stlb.txt", "w" )
     ubobj = open( "src/pywrite/stub.txt", "w" )
     for mykey in stBounds:
         lbobj.write( str( stBounds[mykey][0] ) + " ")
         ubobj.write( str( stBounds[mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()
 
     # write input bounds
     lbobj = open( "src/pywrite/inplb.txt", "w" )
@@ -649,14 +664,45 @@ def process():
     for mykey in inpBounds:
         lbobj.write( str( inpBounds[mykey][0] ) + " ")
         ubobj.write( str( inpBounds[mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()
 
+    #----------------------------------------------------------------------
+    # write simulation parameters
+    #----------------------------------------------------------------------
+    simwrite = open( "src/pywrite/simpars.txt", "w" )
     
+    xstr = maxTimeEntry.get( "1.0", tk.END )
+    xstr = xstr.replace( " ", "" )
+    xstr = xstr.replace( "\n", "" )
+    if xstr != "":
+        simstr = xstr + " "
+    else:
+        simstr = "0.0 "
 
-processButton = tk.Button( ui, text = "Process", command = process,
-                          font = tkFont.Font( size = 25 ),
-                          highlightbackground = "green",
-                          bg = "white")
-processButton.place( x = startPos[0] + 200, y = startPos[1]  )
+    xstr = logDivsEntry.get( "1.0", tk.END )
+    xstr = xstr.replace( " ", "" )
+    xstr = xstr.replace( "\n", "" )
+    if xstr != "":
+        simstr += xstr + " "
+    else:
+        simstr = "0.0 "
+
+    xstr = timeStepEntry.get( "1.0", tk.END )
+    xstr = xstr.replace( " ", "" )
+    xstr = xstr.replace( "\n", "" )
+    if xstr != "":
+        simstr += xstr + " "
+    else:
+        simstr = "0.0 "
+
+    simwrite.write( simstr )
+    simwrite.close()
+    #----------------------------------------------------------------------
+
+    # run executable
+    os.system( "make execute" )
+    
 
 #----------------------------------------------------------------------
 # save and load buttons
@@ -707,6 +753,80 @@ loadButton = tk.Button( ui, text = "Load", command = loadInf,
                           highlightbackground = "green",
                           bg = "white")
 loadButton.place( x = startPos[0] + 300, y = 2*yGap+70 )
+
+
+#----------------------------------------------------------------------
+# process button
+#----------------------------------------------------------------------
+def process():
+    ui.geometry( "770x220" )
+    
+    # state variables
+    state_vars = []
+    for mykey in stBounds:
+        state_vars.append( var( mykey ) )
+
+    # input variables
+    inp_vars = []
+    for mykey in inpBounds:
+        inp_vars.append( var( mykey ) )
+
+    # parameters
+    params = []
+    for mykey in parEqs:
+        params.append( var( mykey ) )
+
+    # parametric equation list
+    eqlist = []
+    for mykey in parEqs:
+        eqlist.append( eval( mykey + "- nsimplify(" + parEqs[ mykey ] + ")" ) )
+
+    # values of parameters and assignments
+    valTuple = solve( eqlist, tuple(params) )
+    vals =  list( valTuple[0] )
+    asgn = []
+    ind = 0
+    for mypar in params:
+        myval1, myval2 = fraction( vals[ ind ] )
+        asgn.append( str( mypar ) + " = " + "Interval(" + str( myval1 ) + "," + str( myval1 ) +
+                     ")/Interval(" + str( myval2 ) + "," + str( myval2 ) + ")" + ";" )
+        ind += 1
+
+    # dynamics in symbolic form
+    dynEqs = {}
+    for mykey in dynamics:
+        dynEqs[ mykey ] =  eval( "nsimplify(" + dynamics[ mykey ] + ")" )
+
+    writetocpp(dynEqs, state_vars, inp_vars, params, asgn, vals)
+
+    # change edit state button
+    editStButton[ "command" ] = editstate
+    editInpButton[ "command" ] = editinp
+    editDynamicsButton[ "command" ] = editdyn
+    editParButton[ "command" ] = editpar
+
+    processButton[ "text" ] = "Simulate"
+    processButton[ "command" ] = simulate
+
+    # place entry fields for simulation hyperparameters
+    maxTimeEntry.place( x = startPos[0] + 500, y = startPos[1] )
+    maxTimeEntryLabel.place( x = startPos[0] + 580, y = startPos[1] )
+    logDivsEntry.place( x = startPos[0] + 500, y = startPos[1] + yGap )
+    logDivsEntryLabel.place( x = startPos[0] + 580, y = startPos[1] + yGap )
+    timeStepEntry.place( x = startPos[0] + 500, y = startPos[1] + 2*yGap )
+    timeStepEntryLabel.place( x = startPos[0] + 580, y = startPos[1] + 2*yGap )
+
+    # destroy load button
+    loadButton.destroy()
+
+    # compile c++ file
+    os.system( "make compile10" )
+
+processButton = tk.Button( ui, text = "Process", command = process,
+                          font = tkFont.Font( size = 23 ),
+                          highlightbackground = "green",
+                          bg = "white" )
+processButton.place( x = startPos[0] + 200, y = startPos[1]  )
 
 
 #----------------------------------------------------------------------
