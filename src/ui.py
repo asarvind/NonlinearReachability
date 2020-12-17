@@ -1,10 +1,9 @@
-import tkinter as tk
-from tkinter import font as tkFont
-import tkinter.scrolledtext as st
 import pickle
 import os
 
+from configure import *
 from symprocess import *
+
 
 #----------------------------------------------------------------------
 # create UI
@@ -828,6 +827,24 @@ processButton = tk.Button( ui, text = "Process", command = process,
                           bg = "white" )
 processButton.place( x = startPos[0] + 200, y = startPos[1]  )
 
+#----------------------------------------------------------------------
+# server button
+#----------------------------------------------------------------------
+server = {}
+server[ "state" ] = "no"
+server[ "path" ] = ""
+
+def serverFn():
+    mywin = tk.Toplevel( ui )
+    mywin.geometry( "700x250" )
+    mywin.configure( bg = "white" )
+    configure( mywin, server )
+    
+serverButton = tk.Button( ui, text = "SSH", command = serverFn,
+                          font = tkFont.Font( size = 18 ),
+                          highlightbackground = "green",
+                          bg = "white" )
+serverButton.place( x = startPos[0] + 350, y = startPos[1]  )
 
 #----------------------------------------------------------------------
 # main tkinter loop
