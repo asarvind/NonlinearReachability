@@ -625,6 +625,28 @@ class editpar( parWin ):
     def parEntryButtonFn( self ):
         pass0
 
+
+#----------------------------------------------------------------------
+# server button
+#----------------------------------------------------------------------
+server = {}
+server[ "state" ] = "no"
+server[ "suffix" ] = ""
+server[ "path" ] = ""
+
+def serverFn():
+    mywin = tk.Toplevel( ui )
+    mywin.geometry( "700x350" )
+    mywin.configure( bg = "white" )
+    configure( mywin, server )
+    
+serverButton = tk.Button( ui, text = "SSH", command = serverFn,
+                          font = tkFont.Font( size = 18 ),
+                          highlightbackground = "green",
+                          bg = "white" )
+serverButton.place( x = startPos[0] + 350, y = startPos[1]  )
+
+
 #----------------------------------------------------------------------
 # Simulate ui
 #----------------------------------------------------------------------
@@ -700,8 +722,18 @@ def simulate():
     #----------------------------------------------------------------------
 
     # run executable
-    os.system( "make execute" )
-    
+    if server[ "state" ] == "no":
+        os.system( "make execute" )
+    else:
+        pth = server[ "path" ]
+        execstr = "scp " + "src/pywrite/*.txt " + server[ "suffix" ]
+        execstr += ":" + pth + "NonlinearReachability/src/pywrite/"
+        os.system( execstr )
+        
+        # execute inside server
+        execstr =  "ssh " + server[ "suffix" ] + " \"" + "make execute\""
+        os.system( execstr )
+
 
 #----------------------------------------------------------------------
 # save and load buttons
@@ -752,7 +784,6 @@ loadButton = tk.Button( ui, text = "Load", command = loadInf,
                           highlightbackground = "green",
                           bg = "white")
 loadButton.place( x = startPos[0] + 300, y = 2*yGap+70 )
-
 
 #----------------------------------------------------------------------
 # process button
@@ -819,32 +850,34 @@ def process():
     loadButton.destroy()
 
     # compile c++ file
-    os.system( "make compile10" )
+    if server[ "state" ] == "no":
+        os.system( "make compile10" )
+    elif server[ "state" ] == "yes":
+        pth = server[ "path" ]
+        # remove pywrite from server
+        execstr = "ssh " + server[ "suffix" ] + " \"" + "rm -rf "
+        execstr += pth + "NonlinearReachability/src/pywrite; "
+
+        # make fresh pywrite directory
+        execstr += "mkdir "
+        execstr += pth + "NonlinearReachability/src/pywrite" + "\""
+        os.system( execstr )
+
+        # copy files to pywrite directory
+        execstr = "scp " + "src/pywrite/* " + server[ "suffix" ]
+        execstr += ":" + pth + "NonlinearReachability/src/pywrite/"
+        os.system( execstr )
+
+        # compile inside server
+        execstr =  "ssh " + server[ "suffix" ] + " \"" + "make compile9\""
+        os.system( execstr )
+        
 
 processButton = tk.Button( ui, text = "Process", command = process,
                           font = tkFont.Font( size = 23 ),
                           highlightbackground = "green",
                           bg = "white" )
 processButton.place( x = startPos[0] + 200, y = startPos[1]  )
-
-#----------------------------------------------------------------------
-# server button
-#----------------------------------------------------------------------
-server = {}
-server[ "state" ] = "no"
-server[ "path" ] = ""
-
-def serverFn():
-    mywin = tk.Toplevel( ui )
-    mywin.geometry( "700x250" )
-    mywin.configure( bg = "white" )
-    configure( mywin, server )
-    
-serverButton = tk.Button( ui, text = "SSH", command = serverFn,
-                          font = tkFont.Font( size = 18 ),
-                          highlightbackground = "green",
-                          bg = "white" )
-serverButton.place( x = startPos[0] + 350, y = startPos[1]  )
 
 #----------------------------------------------------------------------
 # main tkinter loop
