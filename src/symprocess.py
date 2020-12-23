@@ -42,12 +42,28 @@ class writetocpp:
         # also compute linearization matrix at origin 
         self.StMat = np.zeros((self.N,self.N))
         varis = self.inp_vars+self.state_vars
+        
+        # create list of values of state+input+parameter
+        initStUb = np.loadtxt("src/pywrite/stub.txt")
+        initStLb = np.loadtxt("src/pywrite/stlb.txt")
+        initInpLb = np.loadtxt("src/pywrite/inplb.txt")
+        initInpUb = np.loadtxt("src/pywrite/inpub.txt")
+        initlist = []
+        for i in range(initStUb.size):
+            initlist.append( ( initStUb[i] + initStLb[i] )/2.0 )
+        if initInpUb.size>1:
+            for i in range(initInpUb.size):
+                initlist.append( ( initInpUb[i] + initInpLb[i] )/2.0 )
+        else:
+              initlist.append( (initInpUb+initInpLb)/2 )  
+        initlist += self.vals
+        
         self.statemat = [[None for j in range(self.N)] for i in range(self.N)]
         for i in range(self.N):
             for j in range(self.N):
                 self.statemat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.state_vars[j]))
                 StFun = lambdify(self.state_vars+self.inp_vars+self.params,self.statemat[i][j])
-                self.StMat[i,j] = StFun(*(np.zeros(self.N+self.M).tolist() + self.vals))
+                self.StMat[i,j] = StFun(*(initlist))
         # inp coefficient matrix after expressions
         self.inpmat = [[None for j in range(self.N)] for i in range(self.N)]
         self.InpMat = np.zeros((self.N,self.M))
@@ -55,7 +71,7 @@ class writetocpp:
             for i in range(self.N):
                 self.inpmat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.inp_vars[j]))
                 InpFun = lambdify(self.state_vars+self.inp_vars+self.params,self.inpmat[i][j])
-                self.InpMat[i,j] = InpFun(*(np.zeros(self.N+self.M).tolist() + self.vals))
+                self.InpMat[i,j] = InpFun(*(initlist))
         self.linerr = {}
         for i in range(self.N):
             ky = str(self.state_vars[i])
@@ -385,7 +401,7 @@ def parDynamics(dynamics, state_vars, inp_vars, params, assignments, vals):
                 ide = "var_"+str(exp)
                 if ide not in ide_list:
                     ide_list.append(ide)
-                    s[ide] = var("par"+"_"+str(token))
+                    s[ide] = var("par"+"_"+str(token), real=True)
                     out["params"].append(s[ide])
                     out["assignments"].append( str( s[ide] ) + " = " + str(exp) + ";" )
                     out["vals"].append( float(exp) )
@@ -395,3 +411,4 @@ def parDynamics(dynamics, state_vars, inp_vars, params, assignments, vals):
                     
 
 #end-function====================================================================================================
+

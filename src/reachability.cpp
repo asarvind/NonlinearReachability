@@ -17,7 +17,7 @@ public:
   //----------------------------------------------------------------------
   ZonNd(){
     dim = StateDim;
-    order = 150;
+    order = 200;
     center *= 0;
     for(int i=0; i<order; ++i){
       IvMatrixNNd M;
@@ -376,7 +376,7 @@ public:
   void SaveTraces(){
     ofstream myfile;
     // save lower bounds
-    myfile.open("src/pywrite/lb.txt");
+    myfile.open("results/lb.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       for(int i=0; i<N; ++i){
 	if(i==N-1){
@@ -389,7 +389,7 @@ public:
     }
     myfile.close();
     // save upper bounds
-    myfile.open("src/pywrite/ub.txt");
+    myfile.open("results/ub.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       for(int i=0; i<N; ++i){
 	if(i==N-1){
@@ -402,7 +402,7 @@ public:
     }
     myfile.close();
     // save time interval trace
-    myfile.open("src/pywrite/times.txt");
+    myfile.open("results/times.txt");
     for(vector<FlowElem>::iterator itr=FlowPipe.begin(); itr!=FlowPipe.end(); ++itr){
       myfile << ((*itr).time).lower() << "," << ((*itr).time).upper() << "\n";
     }
@@ -490,7 +490,3 @@ public:
   
   // close ioureach class    
 };
-
-
-
-

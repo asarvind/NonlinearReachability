@@ -212,8 +212,9 @@ public:
     }
   }
   
-
+  //----------------------------------------------------------------------
   // method to compute optimal division vector of state region
+  //----------------------------------------------------------------------
   struct OptErr{
     double err;
     IntVectorNd divs;
@@ -294,9 +295,6 @@ public:
     }
     return out;
   }
-  
-
-  
   
   // close class hybridize
 };

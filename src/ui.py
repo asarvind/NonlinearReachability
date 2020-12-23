@@ -9,6 +9,7 @@ from symprocess import *
 # create UI
 #----------------------------------------------------------------------
 os.system( "mkdir -p src/pywrite" )
+os.system( "mkdir -p results" )
 ui = tk.Tk( )
 ui.title( "Flowpipe Simulator" )
 ui.geometry( "500x220" )
@@ -731,7 +732,8 @@ def simulate():
         os.system( execstr )
         
         # execute inside server
-        execstr =  "ssh " + server[ "suffix" ] + " \"" + "make execute\""
+        execstr =  "ssh " + server[ "suffix" ] + " \"cd "
+        execstr += pth + "NonlinearReachability/; " + "make execute\"; cd;"
         os.system( execstr )
 
 
@@ -794,17 +796,17 @@ def process():
     # state variables
     state_vars = []
     for mykey in stBounds:
-        state_vars.append( var( mykey ) )
+        state_vars.append( var( mykey, real=True ) )
 
     # input variables
     inp_vars = []
     for mykey in inpBounds:
-        inp_vars.append( var( mykey ) )
+        inp_vars.append( var( mykey, real=True ) )
 
     # parameters
     params = []
     for mykey in parEqs:
-        params.append( var( mykey ) )
+        params.append( var( mykey, real=True ) )
 
     # parametric equation list
     eqlist = []
@@ -813,7 +815,10 @@ def process():
 
     # values of parameters and assignments
     valTuple = solve( eqlist, tuple(params) )
-    vals =  list( valTuple[0] )
+    if type( valTuple ) is list:
+        vals =  list( valTuple[0] )
+    elif type(valTuple) is dict:
+        vals = list( valTuple.values() )
     asgn = []
     ind = 0
     for mypar in params:
@@ -827,6 +832,25 @@ def process():
     for mykey in dynamics:
         dynEqs[ mykey ] =  eval( "nsimplify(" + dynamics[ mykey ] + ")" )
 
+    # write state bounds
+    lbobj = open( "src/pywrite/stlb.txt", "w" )
+    ubobj = open( "src/pywrite/stub.txt", "w" )
+    for mykey in stBounds:
+        lbobj.write( str( stBounds[mykey][0] ) + " ")
+        ubobj.write( str( stBounds[mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()
+
+    # write input bounds
+    lbobj = open( "src/pywrite/inplb.txt", "w" )
+    ubobj = open( "src/pywrite/inpub.txt", "w" )
+    for mykey in inpBounds:
+        lbobj.write( str( inpBounds[mykey][0] ) + " ")
+        ubobj.write( str( inpBounds[mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()    
+
+    # process and write to c++ format
     writetocpp(dynEqs, state_vars, inp_vars, params, asgn, vals)
 
     # change edit state button
@@ -869,9 +893,9 @@ def process():
         os.system( execstr )
 
         # compile inside server
-        execstr =  "ssh " + server[ "suffix" ] + " \"" + "make compile9\""
+        execstr = "ssh " + server[ "suffix" ] + " \"cd " + pth 
+        execstr += "NonlinearReachability/;" + " make compile9; cd\""
         os.system( execstr )
-        
 
 processButton = tk.Button( ui, text = "Process", command = process,
                           font = tkFont.Font( size = 23 ),

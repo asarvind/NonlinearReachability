@@ -113,6 +113,10 @@ Interval cot(const Interval &x){
 Interval pow(const Interval &x, const double &y){
   return exp(y*log(x));
 }
+Interval pow(const Interval &x, const Interval &y){
+  return exp(y*log(x));
+}
+
 
 
 

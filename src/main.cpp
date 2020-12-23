@@ -46,6 +46,8 @@ int main(){
 
   simhypar.close();
 
+  int order = 200;
+
   // create reachset object
   ioureach reachobj( initstate, inpbounds, logDivs );
   if (tStep>0){
