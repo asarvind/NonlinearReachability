@@ -878,15 +878,20 @@ def process():
         os.system( "make compile10" )
     elif server[ "state" ] == "yes":
         pth = server[ "path" ]
-        # remove pywrite from server
+        # remove pywrite and results directory in host
         execstr = "ssh " + server[ "suffix" ] + " \"" + "rm -rf "
-        execstr += pth + "NonlinearReachability/src/pywrite; "
+        execstr += pth + "NonlinearReachability/src/pywrite "
+        execstr += pth + "NonlinearReachability/results; "
 
         # make fresh pywrite directory
         execstr += "mkdir "
-        execstr += pth + "NonlinearReachability/src/pywrite" + "\""
-        os.system( execstr )
+        execstr += pth + "NonlinearReachability/src/pywrite; "
 
+        # make fresh results directory
+        execstr += "mkdir "
+        execstr += pth + "NonlinearReachability/results\" "
+        os.system( execstr )
+        
         # copy files to pywrite directory
         execstr = "scp " + "src/pywrite/* " + server[ "suffix" ]
         execstr += ":" + pth + "NonlinearReachability/src/pywrite/"

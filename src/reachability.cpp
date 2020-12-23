@@ -171,7 +171,8 @@ public:
     bool unique;
     for(int i=0; i<N; ++i){
       OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
-      DivVecs[intrs] = E.divs;	
+      DivVecs[intrs] = E.divs;
+      cout << E.divs << "\n;"
       // retain unique vectors in the list of optimum division vectors
       // vectors should not be ones
       unique = true;
