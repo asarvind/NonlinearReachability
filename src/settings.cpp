@@ -70,8 +70,11 @@ Interval mycos(const Interval &x){
   Interval y = cos(x);
   if((isnan(y.lower())) || (isnan(y.upper()))){
     // cout << x.lower() << " " << x.upper() << " yes\n";
-    Interval z(1.570,1.571);
-    y = sin(z-x);      
+    y = sin(z-x);
+    if((isnan(y.lower())) || (isnan(y.upper()))){
+      cout << x.lower() << " " << x.upper() << " cos error\n";
+      exit(0);
+    }
   }
   return y;
 }
@@ -80,8 +83,12 @@ Interval mysin(const Interval &x){
   Interval y = sin(x);
   if((isnan(y.lower())) || (isnan(y.upper()))){
     // cout << x.lower() << " " << x.upper() << " yes\n";
-    Interval z(1.570,1.571);
     y = sin(z-x);
+    if((isnan(y.lower())) || (isnan(y.upper()))){
+      cout << x.lower() << " " << x.upper() << " sin error\n";
+      exit(0);
+    }
+
   }
   return y;
 }
