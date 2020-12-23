@@ -193,10 +193,15 @@ IvVectorNd meet(IvVectorNd x, IvVectorNd y){
   IvVectorNd out;
   for(int i=0; i<StateDim; i++){
     out(i) = intersect(x(i),y(i));
+    if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+      cout << "blunder";
+      cout<< x(i).lower() << " " << x(i).upper() << "\n";
+      cout<< y(i).lower() << " " << y(i).upper() << "\n intersection error\n";
+      exit(0);
+    }
   }
   return out;
 }
-
 
 // method to compute center of a state interval vector
 IvVectorNd middle(const IvVectorNd &x){
@@ -204,9 +209,14 @@ IvVectorNd middle(const IvVectorNd &x){
   for(int i=0; i<StateDim; i++){
     double c = (x(i).upper()+x(i).lower())/2.0;
     out(i) = Interval(c,c);
+    if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+      cout<< out(i).lower() << " " << out(i).upper() << " center error\n";
+      exit(0);
+    }      
   }
   return out;
 }
+
 
 // radius of interval vector
 VectorNd radius(IvVectorNd &x){

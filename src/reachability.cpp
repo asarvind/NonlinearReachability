@@ -125,7 +125,7 @@ public:
   IntVectorNd DivVecs[StateDim];
     
   // union storage capacity of iou array
-  static const int MaxDivs = 16;
+  static const int MaxDivs = 128;
   
   /* iou array is 2-dimensional array of zonotopes.
      First dimension contains intersections. Second dimension
@@ -323,10 +323,7 @@ public:
       do_iter = do_iter && SimTime.upper()<T;
       do_iter = do_iter && FlowTime<MaxFlowTime;
     }
-    
-    // print simulation time (optional)
-    // cout << SimTime.lower() << " " << SimTime.upper() << " recursion complete\n";
-    
+        
   }
 
 

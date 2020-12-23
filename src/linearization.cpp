@@ -104,34 +104,6 @@ public:
     return out;
   }
 
-  // meet of interval vectors
-  IvVectorNd meet(IvVectorNd x, IvVectorNd y){
-    IvVectorNd out;
-    for(int i=0; i<N; i++){
-      out(i) = intersect(x(i),y(i));
-      if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
-	cout<< out(i).lower() << " " << out(i).upper() << " intersection error\n";
-	exit(0);
-	}
-    }
-    return out;
-  }
-
-
-  // method to compute center of a state interval vector
-  IvVectorNd middle(const IvVectorNd &x){
-    IvVectorNd out;
-    for(int i=0; i<N; i++){
-      double c = (x(i).upper()+x(i).lower())/2.0;
-      out(i) = Interval(c,c);
-      if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
-	cout<< out(i).lower() << " " << out(i).upper() << " center error\n";
-	  exit(0);
-	}      
-    }
-    return out;
-  }
-
   
   // Structure that contains objects obtained from linearization
   struct LinVals{
@@ -230,7 +202,7 @@ public:
     for( int i=0; i<N; ++i ){
       Interval out = L.region(i);
       if ( isnan( out.upper() ) || isnan( out.lower() ) ){
-	cout<< out.lower() << " " << out.upper() << " linearization nan\n";
+	cout<< out.lower() << " " << out.upper() << " linearization error\n";
 	  exit(0);
       }
     }
