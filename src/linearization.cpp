@@ -85,7 +85,14 @@ public:
 
   // method compute field at a point
   IvVectorNd PointField(const IvVectorNd &center){
-    return VectorField(center, InpCenter);
+    IvVectorNd out =  VectorField(center, InpCenter);
+    for( int i=0; i<N; ++i ){
+      if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+	cout<< out(i).lower() << " " << out(i).upper() << " field error\n";
+	  exit(0);
+	}      
+    }
+    return out;
   }
   
   // join of interval vectors
@@ -102,6 +109,10 @@ public:
     IvVectorNd out;
     for(int i=0; i<N; i++){
       out(i) = intersect(x(i),y(i));
+      if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+	cout<< out(i).lower() << " " << out(i).upper() << " intersection error\n";
+	exit(0);
+	}
     }
     return out;
   }
@@ -113,6 +124,10 @@ public:
     for(int i=0; i<N; i++){
       double c = (x(i).upper()+x(i).lower())/2.0;
       out(i) = Interval(c,c);
+      if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+	cout<< out(i).lower() << " " << out(i).upper() << " center error\n";
+	  exit(0);
+	}      
     }
     return out;
   }
@@ -210,6 +225,15 @@ public:
       cout << "could not find valid linearization region, try reducing time step\n";
       exit(0);
     }
+
+    // check nan error
+    for( int i=0; i<N; ++i ){
+      Interval out = L.region(i);
+      if ( isnan( out.upper() ) || isnan( out.lower() ) ){
+	cout<< out.lower() << " " << out.upper() << " linearization nan\n";
+	  exit(0);
+      }
+    }
   }
   
   //----------------------------------------------------------------------
@@ -297,6 +321,6 @@ public:
   }
   
   // close class hybridize
-};
+  };
 
 

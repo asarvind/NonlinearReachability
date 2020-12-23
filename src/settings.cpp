@@ -70,6 +70,7 @@ Interval mycos(const Interval &x){
   Interval y = cos(x);
   if((isnan(y.lower())) || (isnan(y.upper()))){
     // cout << x.lower() << " " << x.upper() << " yes\n";
+    Interval z(1.570,1.571);
     y = sin(z-x);
     if((isnan(y.lower())) || (isnan(y.upper()))){
       cout << x.lower() << " " << x.upper() << " cos error\n";
@@ -83,12 +84,12 @@ Interval mysin(const Interval &x){
   Interval y = sin(x);
   if((isnan(y.lower())) || (isnan(y.upper()))){
     // cout << x.lower() << " " << x.upper() << " yes\n";
-    y = sin(z-x);
+    Interval z(1.570,1.571);
+    y = cos(z-x);
     if((isnan(y.lower())) || (isnan(y.upper()))){
       cout << x.lower() << " " << x.upper() << " sin error\n";
       exit(0);
     }
-
   }
   return y;
 }
@@ -101,27 +102,49 @@ Interval mytan(const Interval &x){
 // secant
 Interval sec(const Interval &x){
   Interval y = 1/mycos(x);
+  if((isnan(y.lower())) || (isnan(y.upper()))){
+    cout << x.lower() << " " << x.upper() << " sec error\n";
+    exit(0);
+  }
   return y;
 }
 
 // cosecant
 Interval csc(const Interval &x){
   Interval y =  1/mysin(x);
+  if((isnan(y.lower())) || (isnan(y.upper()))){
+    cout << x.lower() << " " << x.upper() << " csc error\n";
+    exit(0);
+  }
   return y;
 }
 
 // cotangent
 Interval cot(const Interval &x){
   Interval y =  mycos(x)/mysin(x);
+  if((isnan(y.lower())) || (isnan(y.upper()))){
+    cout << x.lower() << " " << x.upper() << " cot error\n";
+    exit(0);
+  }
   return y;
 }
 
 // Functions to compute powers
 Interval pow(const Interval &x, const double &y){
-  return exp(y*log(x));
+  Interval out =  exp(y*log(x));
+  if((isnan(out.lower())) || (isnan(out.upper()))){
+    cout << x.lower() << " " << x.upper() << " log error\n";
+    exit(0);
+  }
+  return out;
 }
 Interval pow(const Interval &x, const Interval &y){
-  return exp(y*log(x));
+  Interval out = exp(y*log(x));
+  if((isnan(out.lower())) || (isnan(out.upper()))){
+    cout << x.lower() << " " << x.upper() << " log error\n";
+    exit(0);
+  }
+  return out;
 }
 
 
