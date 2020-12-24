@@ -48,11 +48,16 @@ int main(){
 
   int order = 200;
 
+  // bloating
+  ioureach bloatobj( initstate, inpbounds, tStep/10, logDivs );
+  bloatobj.simulate( tStep );
+
   // create reachset object
-  ioureach reachobj( initstate, inpbounds, logDivs );
-  if (tStep>0){
-    reachobj.TimeStep = tStep;
-  }
+  ioureach reachobj( initstate, inpbounds, tStep, logDivs );
+  reachobj.doBloat = false;
+  reachobj.bounds = bloatobj.MaxBounds;
+  reachobj.MaxBounds = bloatobj.MaxBounds;
+  reachobj.SimTime = Interval( 0, tStep );
 
   // simulate
   reachobj.simulate( T );

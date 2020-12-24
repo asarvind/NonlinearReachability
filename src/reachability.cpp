@@ -147,15 +147,19 @@ public:
   // number of simulations completed
   int SimNum;
 
+  // boolean variable for doing bloating
+  bool doBloat;
+
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
-  ioureach(const IvVectorNd &State, const IvVectorMd &Input, int k)
+  ioureach(const IvVectorNd &State, const IvVectorMd &Input, double tstep, int k)
     :nonlinear(Input){
     InitState = State;
-
+    TimeStep = tstep;
     LogDivs = k;
     SimNum = 0;
+    doBloat = true;
   }
 
   //======================================================================
@@ -243,6 +247,7 @@ public:
       }
       bounds = meet(bounds,U);
     }
+    MaxBounds = join( MaxBounds, bounds );
   }
 
   //----------------------------------------------------------------------
@@ -295,13 +300,13 @@ public:
   // flowpipe computation for a time period
   //----------------------------------------------------------------------
   void flow(double T, double MaxFlowTime, bool isrand){
-
     if(isrand){
       SetRandIou();
     }
     else{
       SetIou();
     };
+    
     double FlowTime = 0;
     bool do_iter = true;
     
@@ -315,15 +320,13 @@ public:
 
       // update flowpipe and bounds
       ++FlowItr;
-      bounds = meet(bounds, (*(FlowItr)).bounds);
       (*(FlowItr)).bounds = bounds;
       MaxBounds = join(bounds,MaxBounds);
       
       // update do_iter
       do_iter = do_iter && SimTime.upper()<T;
       do_iter = do_iter && FlowTime<MaxFlowTime;
-    }
-        
+    }        
   }
 
 
@@ -338,24 +341,26 @@ public:
       for(int i=0; i<N; ++i){
 	InfSt(i) = numeric_limits<double>::infinity()*Interval(-1,1);
       }
-      SimTime = Interval(0,TimeStep);
+      Interval flowInitTime = Interval(0,TimeStep);
       FlowElem S = {InfSt, SimTime};
       FlowPipe.push_back(S);
-      while(SimTime.upper()<T){
-	SimTime += TimeStep;
-	S.time = SimTime;
+      while(flowInitTime.upper()<T){
+	flowInitTime += TimeStep;
+	S.time = flowInitTime;
 	FlowPipe.push_back(S);
       }
     }
-
-    // begin flowpipe
+    
+    // begin flowpipe 
     FlowItr = FlowPipe.begin();
-    bloat();
-    (*(FlowItr)).bounds = meet(bounds, (*(FlowItr)).bounds);
+    if ( doBloat ){
+      bloat();
+    }
+    (*(FlowItr)).bounds = bounds;
 
     /* perform recursive flowpipe computation with intermediate
        iou resets */
-    while(SimTime.upper()<T){     
+    while(SimTime.upper()<T){
       // compute flowpipe until IOU reset
       flow(T,IouResetTime,isrand);
     }
