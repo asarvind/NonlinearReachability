@@ -791,7 +791,11 @@ loadButton.place( x = startPos[0] + 300, y = 2*yGap+70 )
 # process button
 #----------------------------------------------------------------------
 def process():
+    # change geometry of main window
     ui.geometry( "770x220" )
+
+    # destroy SSH button
+    serverButton.destroy()
     
     # state variables
     state_vars = []
