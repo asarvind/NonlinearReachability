@@ -219,7 +219,7 @@ IvVectorNd middle(const IvVectorNd &x){
 
 
 // radius of interval vector
-VectorNd radius(IvVectorNd &x){
+VectorNd radius(const IvVectorNd &x){
   VectorNd out;
   for(int i=0; i<StateDim; ++i){
     out(i) = (x(i).upper()-x(i).lower())/2.0;

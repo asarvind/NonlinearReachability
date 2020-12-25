@@ -291,6 +291,58 @@ public:
     }
     return out;
   }
+
+  //----------------------------------------------------------------------
+  // optimal division vectors for a measure along all directions
+  //----------------------------------------------------------------------
+  OptErr OptDivision(const IvVectorNd &state, int K){    
+    OptErr out;
+    out.err = numeric_limits<double>::infinity();
+    double error;
+    for(int i=0; i<N; i++){
+      out.divs[i] = 1;
+    }
+    // optimum index
+    int optind = 0; 
+    // error variables
+    IvVectorNd OptStateErr = state - middle(state);
+
+    // compute error without splitting
+    VectorNd baseErr = radius( ContError(state,Inp,OptStateErr,InpCenter) );
+
+    IvVectorNd StError, StartErr;
+    // loop to compute optimal error
+    for(int i=0; i<K; i++){
+      optind = 0;
+      // loop to compute error
+      StartErr = OptStateErr*1;
+      for(int j=0; j<N; j++){
+	StError = StartErr*1;
+  	StError[j] /= 2.0;
+	VectorNd splitErr = radius( ContError(state,Inp,StError,InpCenter) );
+
+	// loop to compute infinity norm of relative error
+	error = 0;
+	for( int k = 0; k<N; ++k ){
+	  error = max( splitErr(k)/max( baseErr(k), 1e-10 ), error );
+	}
+	cout << error << "\n";  
+	if(error<out.err){
+	  out.err = error;
+	  optind = j;
+	  OptStateErr = StError*1;
+	}
+      }
+      if(out.err>0){
+	out.divs[optind] *= 2;
+      }
+      else{
+	break;
+      }
+    }
+    return out;
+  }
+  
   
   // close class hybridize
   };
