@@ -46,8 +46,6 @@ int main(){
 
   simhypar.close();
 
-  int order = 200;
-
   // bloating
   ioureach bloatobj( initstate, inpbounds, tStep/10, logDivs );
   bloatobj.simulate( tStep );

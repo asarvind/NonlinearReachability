@@ -661,7 +661,7 @@ maxTimeEntryLabel = tk.Label( ui, text="max. time", bg="white",
 logDivsEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
                            height = 1, width = 5,
                            highlightbackground = "black", bg = "white")
-logDivsEntryLabel = tk.Label( ui, text="log_e( no. divisions )", bg="white",
+logDivsEntryLabel = tk.Label( ui, text="log_2( no. divisions )", bg="white",
                               font = tkFont.Font( size = 20 ) )
 
 timeStepEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),

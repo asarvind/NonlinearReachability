@@ -150,6 +150,9 @@ public:
   // boolean variable for doing bloating
   bool doBloat;
 
+  // seed for random divisions
+  bool seedNum;
+
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
@@ -423,7 +426,7 @@ public:
     for(int i=0; i<N; ++i){
       P.push_back(i);
     }
-    int seed = time(0);
+    int seed = seedNum;
     shuffle(P.begin(),P.end(),default_random_engine(seed));
     // assign division values at each dimension
     for(int& ind : P) {

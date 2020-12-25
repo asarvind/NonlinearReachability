@@ -14,8 +14,11 @@ compile10: src/reachability.cpp
 compile9: src/reachability.cpp
 	g++-9 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/main.cpp -o $(executable)
 
-rand: src/test.cpp
-	g++-10 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/test.cpp -o $(executable)
+rand10: src/randmain.cpp
+	g++-10 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/randmain.cpp -o $(executable)
+
+rand9: src/randmain.cpp
+	g++-9 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/randmain.cpp -o $(executable)
 
 execute: $(executable)
 	time ./$(executable)
