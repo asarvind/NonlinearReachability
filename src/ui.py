@@ -791,6 +791,7 @@ loadButton.place( x = startPos[0] + 300, y = 2*yGap+70 )
 # process button
 #----------------------------------------------------------------------
 def process():
+    symstart = time.time()
     # change geometry of main window
     ui.geometry( "770x220" )
 
@@ -876,10 +877,14 @@ def process():
 
     # destroy load button
     loadButton.destroy()
+    symend = time.time()
 
     # compile c++ file
     if server[ "state" ] == "no":
+        compstart = time.time()
         os.system( "make compile10" )
+        compend = time.time()
+        print( "time for symbolic processing and compiling is ", compend+symend-compstart-compend  )
     elif server[ "state" ] == "yes":
         pth = server[ "path" ]
         # remove pywrite and results directory in host
@@ -904,7 +909,13 @@ def process():
         # compile inside server
         execstr = "ssh " + server[ "suffix" ] + " \"cd " + pth 
         execstr += "NonlinearReachability/;" + " make compile9; cd\""
+        compstart = time.time()
         os.system( execstr )
+        compend = time.time()
+
+        print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart, " secs" )
+    else:
+        print( "error with SSH state:", server[ state ] )
 
 processButton = tk.Button( ui, text = "Process", command = process,
                           font = tkFont.Font( size = 23 ),

@@ -1,4 +1,4 @@
-# include "reachability.cpp"
+# include "unionreach.cpp"
 
 int main(){
   ifstream readlower, readupper, simhypar;
@@ -31,21 +31,27 @@ int main(){
   }
   readlower.close();
   readupper.close();
-
-  // read simulation hyperparameters
-  simhypar.open( "src/pywrite/simpars.txt" );
   
   double T; // simulation time horizon length
-  simhypar >> T;
+  cout << "enter length of time horizon\n";
+  cin >> T;
+  cout << "\n";
 
   int logDivs;
-  simhypar >> logDivs; // log_e( no. divisions )
+  cout << "enter log_2( no. of divisions )\n";
+  cin >> logDivs; // log_2( no. divisions )
+  cout << "\n";
 
   double tStep; // time step size
-  simhypar >> tStep;
+  cout << "enter time step size\n";
+  cin >> tStep;
+  cout << "\n";
 
-  simhypar.close();
-
+  // get seed number for pseudorandomnumber generation
+  int seedNum;
+  cout << "enter pseudorandom generator initialization seed (integer):\n";
+  cin >> seedNum;
+  
   // bloating
   ioureach bloatobj( initstate, inpbounds, tStep/10, logDivs );
   bloatobj.simulate( tStep );
@@ -57,8 +63,11 @@ int main(){
   reachobj.MaxBounds = bloatobj.MaxBounds;
   reachobj.SimTime = Interval( 0, tStep );
 
+  // set seed
+  reachobj.seedNum = seedNum;
+  
   // simulate
-  reachobj.simulate( T );
+  reachobj.RandSim( T );
 
   // save traces
   reachobj.SaveTraces();

@@ -326,7 +326,6 @@ public:
 	for( int k = 0; k<N; ++k ){
 	  error = max( splitErr(k)/max( baseErr(k), 1e-10 ), error );
 	}
-	cout << error << "\n";  
 	if(error<out.err){
 	  out.err = error;
 	  optind = j;
