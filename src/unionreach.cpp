@@ -407,8 +407,8 @@ public:
     for(int i=0; i<N; ++i){
       P.push_back(i);
     }
-    int seed = seedNum;
-    shuffle(P.begin(),P.end(),default_random_engine(seed));
+    shuffle(P.begin(),P.end(),default_random_engine(seedNum));
+    srand( seedNum );
     // assign division values at each dimension
     for(int& ind : P) {
       int l = rand()%q;
