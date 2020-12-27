@@ -433,6 +433,7 @@ public:
       out(ind) = pow(2,l);
       q -= l; 
     }
+    cout << out << "\n" << "next\n";
     return out;
   }
 
