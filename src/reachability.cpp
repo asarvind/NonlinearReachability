@@ -426,8 +426,7 @@ public:
     for(int i=0; i<N; ++i){
       P.push_back(i);
     }
-    shuffle(P.begin(),P.end(),default_random_engine(seedNum));
-    srand( seedNum );
+    shuffle(P.begin(),P.end(),default_random_engine( rand() ));
     // assign division values at each dimension
     for(int& ind : P) {
       int l = rand()%q;
@@ -490,6 +489,7 @@ public:
   }
 
   void RandSim(double T){
+    srand( seedNum );
     simulate(T,T,true);
   }
   
