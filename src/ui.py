@@ -884,7 +884,7 @@ def process():
         compstart = time.time()
         os.system( "make compile10" )
         compend = time.time()
-        print( "time for symbolic processing and compiling is ", compend+symend-compstart-compend  )
+        print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart  )
     elif server[ "state" ] == "yes":
         pth = server[ "path" ]
         # remove pywrite and results directory in host

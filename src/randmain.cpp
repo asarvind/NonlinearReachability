@@ -62,12 +62,9 @@ int main(){
   reachobj.bounds = bloatobj.MaxBounds;
   reachobj.MaxBounds = bloatobj.MaxBounds;
   reachobj.SimTime = Interval( 0, tStep );
-
-  // set seed
-  reachobj.seedNum = seedNum;
   
   // simulate
-  reachobj.RandSim( T );
+  reachobj.RandSim( T, seedNum );
 
   // save traces
   reachobj.SaveTraces();

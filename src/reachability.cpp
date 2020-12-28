@@ -17,7 +17,7 @@ public:
   //----------------------------------------------------------------------
   ZonNd(){
     dim = StateDim;
-    order = 400;
+    order = 200;
     center *= 0;
     for(int i=0; i<order; ++i){
       IvMatrixNNd M;
@@ -149,9 +149,6 @@ public:
 
   // boolean variable for doing bloating
   bool doBloat;
-
-  // seed for random divisions
-  bool seedNum;
 
   //----------------------------------------------------------------------
   // constructor
@@ -489,7 +486,7 @@ public:
     }
   }
 
-  void RandSim(double T){
+  void RandSim(double T, int seedNum){
     srand( seedNum );
     simulate(T,T,true);
   }
