@@ -124,14 +124,15 @@ public:
   };
 
   
-  // method to perform continuous time linearization
-  void ContLin(LinVals &L){
-    // LinRegion(L);
-    L.center = middle(L.state);
-    L.region = L.state;
-    L.shift = PointField(L.center);
-    L.StMatCont = ContStMat(L.center);
-    L.InpMatCont = ContInpMat(L.center);
+  // method to perform intantaneous (not regional) continuous time linearization
+  void ContLin( LinVals &L, bool recompute ){
+    if (recompute){
+      L.center = middle(L.state);
+      L.region = L.state;
+      L.shift = PointField(L.center);
+      L.StMatCont = ContStMat(L.center);
+      L.InpMatCont = ContInpMat(L.center);
+    }
     L.ErrTaylor = TaylorErr(L.region,L.center);
     L.ErrCont = L.shift + L.ErrTaylor;
   }
@@ -152,9 +153,9 @@ public:
     Interval epsilon = pow(delta,3);
     // Discrete time error
     L.ErrDis =
-      L.ErrCont*TimeStep + 1.0*(A*L.ErrCont*pow(TimeStep,2)/2 + SqA*L.ErrCont*epsilon/2 +
-			    SqA*A*(L.region-L.center)*epsilon/6 +
-			    SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2);
+      L.ErrCont*TimeStep + ( A*L.ErrCont*pow(TimeStep,2)/2 + SqA*L.ErrCont*epsilon/2 +
+			     SqA*A*(L.region-L.center)*epsilon/6 +
+			     SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2 );
     // add shift due to non-centered action
     L.ErrDis += L.center - L.StMatDis*L.center;
   }
@@ -164,7 +165,7 @@ public:
     // time interval
     Interval delta = Interval(0,TimeStep);
     /* perform continuous time linearization */
-    ContLin(L);
+    ContLin(L,true);
     IvMatrixNNd A = L.StMatCont;
     IvMatrixNNd SqA = A*A;
     bool valid = false;
@@ -178,9 +179,9 @@ public:
       // intial state and input action matrices
       // Discrete time error
       L.ErrDis =
-	L.ErrCont*delta + 1.0*(A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
+	L.ErrCont*delta + ( A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
 			       SqA*A*(L.region-L.center)*epsilon/6 +
-			       SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2);
+			       SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2 );
       // add shift due to non-centered action
       L.ErrDis += L.center - L.StMatDis*L.center;
       // update region
@@ -191,6 +192,8 @@ public:
       }
       else{
 	L.region = join(L.region,NextRegion);
+	ContLin(L,false);
+	valid = false;
       }
     }
     if(not valid){

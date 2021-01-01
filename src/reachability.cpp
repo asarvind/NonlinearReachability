@@ -257,20 +257,22 @@ public:
     LinVals L;
     L.state = InitState;
     bounds = InitState;
+    LinRegion( L );
     Interval delta = Interval(0,TimeStep);
-    /* perform continuous time linearization */
-    ContLin(L);
-    L.StMatDis = eyeN + L.StMatCont*delta;
-    L.InpMatDis = L.InpMatCont*delta;
-    /* discrete time linearization error*/
-    // square of delta
-    Interval epsilon = pow(delta,2);
-    // Discrete time error
-    L.ErrDis =
-      L.ErrCont*delta + L.StMatCont*L.StMatCont*L.region*epsilon/2 + L.StMatCont*L.ErrCont*epsilon +
-      L.StMatCont*L.InpMatCont*(Inp-InpCenter)*epsilon;
+    // /* perform continuous time linearization */
+    // ContLin(L,true);
+    // L.StMatDis = eyeN + L.StMatCont*delta;
+    // L.InpMatDis = L.InpMatCont*delta;
+    // /* discrete time linearization error*/
+    // // square of delta
+    // Interval epsilon = pow(delta,2);
+    // // Discrete time error
+    // L.ErrDis =
+    //   L.ErrCont*delta + L.StMatCont*L.StMatCont*L.region*epsilon/2 + L.StMatCont*L.ErrCont*epsilon +
+    //   L.StMatCont*L.InpMatCont*(Inp-InpCenter)*epsilon;
     // next bounds
-    bounds = L.StMatDis*bounds + L.InpMatDis*(Inp - InpCenter) + L.ErrDis;
+    bounds = L.region;
+    //bounds = L.StMatDis*bounds + L.InpMatDis*(Inp - InpCenter) + L.ErrDis;
     MaxBounds = bounds;
     SimTime = delta;
   }
