@@ -95,16 +95,6 @@ public:
     return out;
   }
   
-  // join of interval vectors
-  IvVectorNd join(IvVectorNd x, IvVectorNd y){
-    IvVectorNd out;
-    for(int i=0; i<N; i++){
-      out(i) = hull(x(i),y(i));
-    }
-    return out;
-  }
-
-  
   // Structure that contains objects obtained from linearization
   struct LinVals{
     IvVectorNd region; // valid region of linearization
