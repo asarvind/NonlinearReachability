@@ -207,8 +207,9 @@ IvVectorNd meet(IvVectorNd x, IvVectorNd y){
 IvVectorNd middle(const IvVectorNd &x){
   IvVectorNd out;
   for(int i=0; i<StateDim; i++){
-    double c = (x(i).upper()+x(i).lower())/2.0;
-    out(i) = Interval(c,c);
+    double l = x( i ).lower();
+    double r = x( i ).upper();
+    out(i) = ( Interval( r, r ) + Interval( l, l ) )/2.0;
     if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
       cout<< out(i).lower() << " " << out(i).upper() << " center error\n";
       exit(0);

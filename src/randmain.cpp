@@ -1,4 +1,4 @@
-# include "reachability.cpp"
+# include "newreachability.cpp"
 
 int main(){
   ifstream readlower, readupper, simhypar;
@@ -49,7 +49,7 @@ int main(){
 
   // get seed number for pseudorandomnumber generation
   int seedNum;
-  cout << "enter pseudorandom generator initialization seed (integer):\n";
+  cout << "enter pseudorandom generator initialization seed (integer):\n negative seed for not random:\n";
   cin >> seedNum;
   
   // bloating
@@ -62,10 +62,16 @@ int main(){
   reachobj.bounds = bloatobj.MaxBounds;
   reachobj.MaxBounds = bloatobj.MaxBounds;
   reachobj.SimTime = Interval( 0, tStep );
+
+  bool do_rand = false;
   
   // simulate
-  reachobj.RandSim( T, seedNum );
-
+  if( seedNum >= 0 ){
+    reachobj.RandSim( T, seedNum );
+  }
+  else{
+    reachobj.simulate( T );
+  }
   // save traces
   reachobj.SaveTraces();
 }
