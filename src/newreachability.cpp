@@ -499,10 +499,14 @@ public:
   };
 
   splitBox split( const IvVectorNd &x ){
+    // compute linearization error
+    IvVectorNd c = middle( x );
+    IvVectorNd ec = TaylorErr( x, c );
+    VectorNd threshErr = radius( ec );
+    
     double optErr = numeric_limits<double>::infinity(); // optimum error
     splitBox out; // output
-  
-    IvVectorNd c = middle( x );
+    
     for( int i=0; i<N; ++i ){
       // create candidate left and right boxes
       IvVectorNd testLeft = x;
@@ -510,13 +514,17 @@ public:
       testLeft( i ) = Interval( x( i ).lower(), c( i ).upper() );
       testRight( i ) = Interval( c( i ).lower(), x( i ).upper() );
 
-      // calculate measure of linearization error
+      // calculate normalized measure of linearization error
       IvVectorNd cl = middle( testLeft );
       IvVectorNd cr = middle( testRight );
       IvVectorNd errLeft = TaylorErr( testLeft, cl );
       IvVectorNd errRight = TaylorErr( testRight, cr );
       VectorNd eLeft = radius( errLeft );
       VectorNd eRight = radius( errRight );
+      for( int j=0; j<N; ++j ){
+	eLeft( i ) /= max( 1e-10, threshErr( i ) );
+	eRight( i ) /= max( 1e-10, threshErr( i ) );
+      }
       double err = ( eLeft.lpNorm<Eigen::Infinity>() )*( eRight.lpNorm<Eigen::Infinity>() );
 
       // compute new optimum error and boxes
