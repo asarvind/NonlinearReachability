@@ -259,20 +259,7 @@ public:
     bounds = InitState;
     LinRegion( L );
     Interval delta = Interval(0,TimeStep);
-    // /* perform continuous time linearization */
-    // ContLin(L,true);
-    // L.StMatDis = eyeN + L.StMatCont*delta;
-    // L.InpMatDis = L.InpMatCont*delta;
-    // /* discrete time linearization error*/
-    // // square of delta
-    // Interval epsilon = pow(delta,2);
-    // // Discrete time error
-    // L.ErrDis =
-    //   L.ErrCont*delta + L.StMatCont*L.StMatCont*L.region*epsilon/2 + L.StMatCont*L.ErrCont*epsilon +
-    //   L.StMatCont*L.InpMatCont*(Inp-InpCenter)*epsilon;
-    // next bounds
     bounds = L.region;
-    //bounds = L.StMatDis*bounds + L.InpMatDis*(Inp - InpCenter) + L.ErrDis;
     MaxBounds = bounds;
     SimTime = delta;
   }
@@ -290,8 +277,11 @@ public:
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
 	iou[j][k].prod(L.StMatDis);
-	iou[j][k].MinSum(L.InpMatDis*(Inp-InpCenter) + L.ErrDis);
+	IvVectorNd addvect = L.InpMatDis*(Inp-InpCenter) + L.ErrDis;
+	iou[j][k].MinSum( addvect );
 	iou[j][k].setBounds();
+	IvVectorNd boxBounds = L.StMatDis*L.state + addvect;
+	iou[j][k].bounds = meet( boxBounds, iou[j][k].bounds );
       }
     }
     SetBounds();
