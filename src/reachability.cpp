@@ -17,7 +17,7 @@ public:
   //----------------------------------------------------------------------
   ZonNd(){
     dim = StateDim;
-    order = 400;
+    order = 200;
     center *= 0;
     for(int i=0; i<order; ++i){
       IvMatrixNNd M;
