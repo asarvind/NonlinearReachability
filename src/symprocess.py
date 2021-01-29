@@ -62,6 +62,7 @@ class writetocpp:
         for i in range(self.N):
             for j in range(self.N):
                 self.statemat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.state_vars[j]))
+                print(self.statemat[i][j])
                 StFun = lambdify(self.state_vars+self.inp_vars+self.params,self.statemat[i][j])
                 self.StMat[i,j] = StFun(*(initlist))
         # inp coefficient matrix after expressions
@@ -351,10 +352,11 @@ class writetocpp:
         x = (6*np.amin((np.reciprocal(d))*0.01))**(1/3)
         d = (np.absolute(np.matmul(np.matmul(self.StMat,self.StMat),self.InpMat))).sum(1)
         y = (2*np.amin(np.reciprocal(d))*0.01)**(1/3)
-        self.TimeStep = np.minimum(x,y)
-        self.TimeStep = np.minimum(self.TimeStep,1)
-        n = math.ceil(-1*math.log10(self.TimeStep))
-        self.TimeStep = round(self.TimeStep,n)
+        # self.TimeStep = np.minimum(x,y)
+        # self.TimeStep = np.minimum(self.TimeStep,1)
+        # n = math.ceil(-1*math.log10(self.TimeStep))
+        # self.TimeStep = round(self.TimeStep,n)
+        self.TimeStep = 0.1
 
     def WriteEig(self):
         _,V = np.linalg.eig(self.StMat);
@@ -395,18 +397,18 @@ def parDynamics(dynamics, state_vars, inp_vars, params, assignments, vals):
     ide_list = []
     token = 0;
 
-    for ky in dynamics:
-        for exp in preorder_traversal( dynamics[ky] ):
-            if(isinstance(exp,(Float,Integer))):
-                ide = "var_"+str(exp)
-                if ide not in ide_list:
-                    ide_list.append(ide)
-                    s[ide] = var("par"+"_"+str(token), real=True)
-                    out["params"].append(s[ide])
-                    out["assignments"].append( str( s[ide] ) + " = " + str(exp) + ";" )
-                    out["vals"].append( float(exp) )
-                    out["dynamics"][ky] = out["dynamics"][ky].subs( exp, s[ide] )
-                    token += 1
+    # for ky in dynamics:
+    #     for exp in preorder_traversal( dynamics[ky] ):
+    #         if(isinstance(exp,(Float,Integer))):
+    #             ide = "var_"+str(exp)
+    #             if ide not in ide_list:
+    #                 ide_list.append(ide)
+    #                 s[ide] = var("par"+"_"+str(token), real=True)
+    #                 out["params"].append(s[ide])
+    #                 out["assignments"].append( str( s[ide] ) + " = " + str(exp) + ";" )
+    #                 out["vals"].append( float(exp) )
+    #                 out["dynamics"][ky] = out["dynamics"][ky].subs( exp, s[ide] )
+    #                 token += 1
     return out;
                     
 
