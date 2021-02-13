@@ -24,7 +24,7 @@ public:
       M *= 0;
       GenMat.push_back(M);
     }
-    // create ones vector
+    // create [-1,1]^n vector
     for(int i=0; i<dim; ++i){
       CoeffVect(i) = Interval(-1.0,1.0);
     }
@@ -79,7 +79,7 @@ public:
     bounds = getBounds();
   }
 
-
+  // compute bounds on the zonotope
   IvVectorNd getBounds(){
     IvVectorNd out = center*1;
     for(vector<IvMatrixNNd>::iterator itr=GenMat.begin(); itr!=GenMat.end(); ++itr){
