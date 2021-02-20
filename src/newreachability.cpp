@@ -17,14 +17,14 @@ public:
   //----------------------------------------------------------------------
   ZonNd(){
     dim = StateDim;
-    order = 200;
+    order = 2;
     center *= 0;
     for(int i=0; i<order; ++i){
       IvMatrixNNd M;
       M *= 0;
       GenMat.push_back(M);
     }
-    // create ones vector
+    // create [-1,1]^n vector
     for(int i=0; i<dim; ++i){
       CoeffVect(i) = Interval(-1.0,1.0);
     }
@@ -33,6 +33,21 @@ public:
   //======================================================================
   // Methods
   //======================================================================
+
+  // reset zonotope with a specified order
+  void resetOrder( int neworder ){
+    order = neworder;
+    center *= 0;
+    bounds *= 0;
+    vector<IvMatrixNNd> newGenMat;
+    for(int i=0; i<order; ++i){
+      IvMatrixNNd M;
+      M *= 0;
+      newGenMat.push_back(M);
+    }
+    GenMat.resize( zonOrder );
+    GenMat = newGenMat;
+  }
   
   //----------------------------------------------------------------------
   // Pre-multiply with a matrix
@@ -79,7 +94,7 @@ public:
     bounds = getBounds();
   }
 
-
+  // compute bounds on the zonotope
   IvVectorNd getBounds(){
     IvVectorNd out = center*1;
     for(vector<IvMatrixNNd>::iterator itr=GenMat.begin(); itr!=GenMat.end(); ++itr){
@@ -120,6 +135,9 @@ public:
   
   // number of elements in union
   int intrs;
+
+  // order of zonotope
+  int zonOrder;
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
@@ -158,6 +176,7 @@ public:
     InitState = State;
     TimeStep = tstep;
     LogDivs = k;
+    zonOrder = iou[0][0].order;
     SimNum = 0;
     doBloat = true;
     intrs = 1;
@@ -223,6 +242,7 @@ public:
     for(int j=0; j<divs; j++){
       // reset zonotope
       iou[0][j] = ZonNd();
+      iou[0][j].resetOrder( zonOrder );
       IvVectorNd addvect = ubox[ j ]*1;
       // set zonotope value
       iou[0][j].MinSum(addvect);
@@ -255,17 +275,6 @@ public:
     bounds = InitState;
     LinRegion( L );
     Interval delta = Interval(0,TimeStep);
-    // /* perform continuous time linearization */
-    // ContLin(L,true);
-    // L.StMatDis = eyeN + L.StMatCont*delta;
-    // L.InpMatDis = L.InpMatCont*delta;
-    // /* discrete time linearization error*/
-    // // square of delta
-    // Interval epsilon = pow(delta,2);
-    // // Discrete time error
-    // L.ErrDis =
-    //   L.ErrCont*delta + L.StMatCont*L.StMatCont*L.region*epsilon/2 + L.StMatCont*L.ErrCont*epsilon +
-    //   L.StMatCont*L.InpMatCont*(Inp-InpCenter)*epsilon;
     // next bounds
     bounds = L.region;
     //bounds = L.StMatDis*bounds + L.InpMatDis*(Inp - InpCenter) + L.ErrDis;
@@ -469,6 +478,7 @@ public:
       for(int j=0; j<divs; j++){
 	// reset zonotope
 	iou[i][j] = ZonNd();
+	iou[i][j].resetOrder();
 	q = j;
 	IvVectorNd addvect;
 	for(int k=0; k<N; k++){

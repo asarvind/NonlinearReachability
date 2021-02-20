@@ -17,7 +17,7 @@ public:
   //----------------------------------------------------------------------
   ZonNd(){
     dim = StateDim;
-    order = 40;
+    order = 2;
     center *= 0;
     for(int i=0; i<order; ++i){
       IvMatrixNNd M;
@@ -33,6 +33,21 @@ public:
   //======================================================================
   // Methods
   //======================================================================
+
+  // reset zonotope with a specified order
+  void resetOrder( int neworder ){
+    order = neworder;
+    center *= 0;
+    bounds *= 0;
+    vector<IvMatrixNNd> newGenMat;
+    for(int i=0; i<order; ++i){
+      IvMatrixNNd M;
+      M *= 0;
+      newGenMat.push_back(M);
+    }
+    GenMat.resize( order );
+    GenMat = newGenMat;
+  }
   
   //----------------------------------------------------------------------
   // Pre-multiply with a matrix
@@ -120,6 +135,9 @@ public:
   
   // number of elements in union
   int intrs;
+
+  // order of zonotope
+  int zonOrder;
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
@@ -157,6 +175,7 @@ public:
     :nonlinear(Input, parvals){
     InitState = State;
     TimeStep = tstep;
+    zonOrder = (iou[0][0]).order;
     LogDivs = k;
     SimNum = 0;
     doBloat = true;
@@ -165,6 +184,7 @@ public:
   //======================================================================
   // Methods
   //======================================================================
+
 
   //----------------------------------------------------------------------
   /* Compute optimal division vectors along different directions 
@@ -210,6 +230,7 @@ public:
       for(int j=0; j<divs; j++){
 	// reset zonotope
 	iou[i][j] = ZonNd();
+	iou[i][j].resetOrder( zonOrder );
 	q = j;
 	IvVectorNd addvect;
 	for(int k=0; k<N; k++){
@@ -462,6 +483,7 @@ public:
       for(int j=0; j<divs; j++){
 	// reset zonotope
 	iou[i][j] = ZonNd();
+	iou[i][j].resetOrder( zonOrder );
 	q = j;
 	IvVectorNd addvect;
 	for(int k=0; k<N; k++){
