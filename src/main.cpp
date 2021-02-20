@@ -57,16 +57,19 @@ int main(){
   double tStep; // time step size
   simhypar >> tStep;
 
+  int zonOrder;
+  simhypar >> zonOrder;  // order of zonotope
+
   simhypar.close();
 
   // bloating
   ioureach bloatobj( initstate, inpbounds, parvals, tStep/10, logDivs );
-  bloatobj.zonOrder = 400;
+  bloatobj.zonOrder = zonOrder;
   bloatobj.simulate( tStep );
 
   // create reachset object
   ioureach reachobj( initstate, inpbounds, parvals, tStep, logDivs );
-  reachobj.zonOrder = 400;
+  reachobj.zonOrder = zonOrder;
   reachobj.doBloat = false;
   reachobj.bounds = bloatobj.MaxBounds;
   reachobj.MaxBounds = bloatobj.MaxBounds;

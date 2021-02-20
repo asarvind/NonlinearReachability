@@ -668,6 +668,12 @@ timeStepEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
 timeStepEntryLabel = tk.Label( ui, text="step size", bg="white",
                                font = tkFont.Font( size = 20 ) )
 
+zonOrderEntry = tk.Text( ui, font = tkFont.Font( size = 20 ),
+                           height = 1, width = 5,
+                           highlightbackground = "black", bg = "white" )
+zonOrderEntryLabel = tk.Label( ui, text="order of zonotope", bg="white",
+                               font = tkFont.Font( size = 20 ) )
+
 def simulate():
     # write state bounds
     lbobj = open( "src/pywrite/stlb.txt", "w" )
@@ -747,6 +753,14 @@ def simulate():
         simstr = "0.0 "
 
     xstr = timeStepEntry.get( "1.0", tk.END )
+    xstr = xstr.replace( " ", "" )
+    xstr = xstr.replace( "\n", "" )
+    if xstr != "":
+        simstr += xstr + " "
+    else:
+        simstr = "0.0 "
+
+    xstr = zonOrderEntry.get( "1.0", tk.END )
     xstr = xstr.replace( " ", "" )
     xstr = xstr.replace( "\n", "" )
     if xstr != "":
@@ -921,6 +935,8 @@ def process():
     logDivsEntryLabel.place( x = startPos[0] + 580, y = startPos[1] + yGap )
     timeStepEntry.place( x = startPos[0] + 500, y = startPos[1] + 2*yGap )
     timeStepEntryLabel.place( x = startPos[0] + 580, y = startPos[1] + 2*yGap )
+    zonOrderEntry.place( x = startPos[0] + 500, y = startPos[1] + 3*yGap )
+    zonOrderEntryLabel.place( x = startPos[0] + 580, y = startPos[1] + 3*yGap )    
 
     # destroy load button
     loadButton.destroy()

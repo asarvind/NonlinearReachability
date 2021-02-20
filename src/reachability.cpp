@@ -312,13 +312,9 @@ public:
   //----------------------------------------------------------------------
   // flowpipe computation for a time period
   //----------------------------------------------------------------------
-  void flow(double T, double MaxFlowTime, bool isrand){
-    if(isrand){
-      SetRandIou();
-    }
-    else{
-      SetIou();
-    };
+  void flow(double T, double MaxFlowTime){
+    // set iou
+    SetIou();
     
     double FlowTime = 0;
     bool do_iter = true;
@@ -346,7 +342,7 @@ public:
   //----------------------------------------------------------------------
   // Simulation
   //----------------------------------------------------------------------
-  void simulate(const double T, double IouResetTime, bool isrand){
+  void simulate(const double T, double IouResetTime){
 
     // initialize flowpipe on first simulation
     if(SimNum==0){
@@ -375,14 +371,14 @@ public:
        iou resets */
     while(SimTime.upper()<T){
       // compute flowpipe until IOU reset
-      flow(T,IouResetTime,isrand);
+      flow(T,IouResetTime);
     }
   }
 
   void simulate(double T){
     omp_set_num_threads(64);
     omp_set_nested(3);
-    simulate(T,T,false);
+    simulate(T,T);
   }
 
   //----------------------------------------------------------------------
@@ -425,85 +421,6 @@ public:
   }
 
 
-  //----------------------------------------------------------------------
-  // random simulation
-  //----------------------------------------------------------------------
-  IntVectorNd RandDivVecs(){
-    IntVectorNd out;
-    int q = LogDivs+1;
-    // create a random permulation 0:N-1
-    vector<int> P;
-    for(int i=0; i<N; ++i){
-      P.push_back(i);
-    }
-    shuffle(P.begin(),P.end(),default_random_engine( rand() ));
-    // assign division values at each dimension
-    for(int& ind : P) {
-      int l = rand()%q;
-      out(ind) = pow(2,l);
-      q -= l; 
-    }
-    cout << out << "\n" << "next\n";
-    return out;
-  }
-
-  void SetRandDivVecs(){
-    intrs = 0;
-    bool unique;
-    for(int i=0; i<N; ++i){
-      DivVecs[intrs] = RandDivVecs();	
-      // retain unique vectors in the list of optimum division vectors
-      // vectors should not be ones
-      unique = true;
-      unique = unique && (DivVecs[intrs].lpNorm<Eigen::Infinity>() > 1);
-      for(int l=0; l<intrs; ++l){
-	unique = unique && ((DivVecs[intrs]-DivVecs[l]).lpNorm<Eigen::Infinity>() > 0);
-      }
-      if(unique){
-	intrs += 1;
-      }
-    }
-    if(intrs==0){
-      for(int i=0; i<N; i++){
-	DivVecs[intrs](i) = 1;
-	intrs = 1;
-      }
-    }
-  }
-
-  void SetRandIou(){
-    SetRandDivVecs();
-    // divide state into iou
-    int divs = pow(2,LogDivs);
-    int q, d;
-    q = 0;
-    d = 0;
-    Interval iv, delta;
-    for(int i=0; i<intrs; i++){
-      for(int j=0; j<divs; j++){
-	// reset zonotope
-	iou[i][j] = ZonNd();
-	iou[i][j].resetOrder( zonOrder );
-	q = j;
-	IvVectorNd addvect;
-	for(int k=0; k<N; k++){
-	  d = DivVecs[i](k);
-	  iv = bounds(k);
-	  delta = (Interval(iv.upper(),iv.upper())-Interval(iv.lower(),iv.lower()))/d;
-	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
-	  q /= d;
-	}
-	// set zonotope value
-	iou[i][j].MinSum(addvect);
-	iou[i][j].setBounds();
-      }
-    }
-  }
-
-  void RandSim(double T, int seedNum){
-    srand( seedNum );
-    simulate(T,T,true);
-  }
   
   // close ioureach class    
 };
