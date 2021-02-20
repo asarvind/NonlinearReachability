@@ -153,8 +153,8 @@ public:
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
-  ioureach(const IvVectorNd &State, const IvVectorMd &Input, double tstep, int k)
-    :nonlinear(Input){
+  ioureach(const IvVectorNd &State, const IvVectorMd &Input, const IvVectorKd &parvals, double tstep, int k)
+    :nonlinear(Input, parvals){
     InitState = State;
     TimeStep = tstep;
     LogDivs = k;

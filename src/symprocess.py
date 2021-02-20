@@ -10,13 +10,11 @@ import math
 #****************************************************************************************************
 
 class writetocpp:
-    def __init__(self,dynamics,state_vars,inp_vars,params=[],assignments=[],vals=[]):
+    def __init__(self,dynamics,state_vars,inp_vars,params=[],vals=[]):
         self.state_vars = state_vars
         self.inp_vars = inp_vars
-        mydict = parDynamics(dynamics, state_vars, inp_vars,params,assignments,vals)
-        self.assignments = mydict["assignments"]
-        self.params = mydict["params"]
-        self.vals  = mydict["vals"]
+        self.params = params
+        self.vals  = vals
         self.err_var = {}
         new_vars = []
         for v in self.state_vars+self.inp_vars:
@@ -28,18 +26,20 @@ class writetocpp:
         for v in self.state_vars:
             self.state_ind[str(v)] = ind
             ind += 1
-        # dimensions of state and input space
+        # dimensions of state, input and parameters
         self.N = len(self.state_vars)
         self.M = len(self.inp_vars)
+        self.K = len( self.params )
+        
         # time constants
         self.TimeStep = 0.01 # step size
         # store dynamics along each dimension and their corresponding lambda functions
         self.dynamics = {}
         # std string for replacement
         for v in self.state_vars:
-            self.dynamics[str(v)] = mydict["dynamics"][str(v)]
-        # state coefficient matrix  after linearization
-        # also compute linearization matrix at origin 
+            self.dynamics[str(v)] = dynamics[str(v)]
+        # symbolic state coefficient matrix  after linearization
+        # also compute concrete linearization matrix at origin 
         self.StMat = np.zeros((self.N,self.N))
         varis = self.inp_vars+self.state_vars
         
@@ -62,7 +62,6 @@ class writetocpp:
         for i in range(self.N):
             for j in range(self.N):
                 self.statemat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.state_vars[j]))
-                print(self.statemat[i][j])
                 StFun = lambdify(self.state_vars+self.inp_vars+self.params,self.statemat[i][j])
                 self.StMat[i,j] = StFun(*(initlist))
         # inp coefficient matrix after expressions
@@ -99,12 +98,12 @@ class writetocpp:
         f.write("const int StateDim = "+str(self.N)+";\n")
         # write dimension of input
         f.write("const int InputDim = "+str(self.M)+";\n")
+        # write number of parameters
+        f.write("const int pardim = "+str(self.K)+";\n")
+
         # write time constants
         self.TimeConstants()
         f.write("const double StepSize = "+str(self.TimeStep)+";\n")
-        # write parametric assignments
-        for asng in self.assignments:
-            f.write("const Interval " + asng + "\n")
         f.close()
         self.WriteEig()
         self.WriteVectorField()
@@ -118,28 +117,40 @@ class writetocpp:
         f = open(self.VectorFieldFile, "w")
         f.write("// Function to compute bounds on vector field\n")
         f.close()
+        
         # Initialize Function
         f = open(self.VectorFieldFile,"a")
+        
         # open function 
-        f.write("IvVectorNd VectorField(const IvVectorNd &state, const IvVectorMd &inp)"+"{\n")
+        f.write("IvVectorNd VectorField(const IvVectorNd &state, const IvVectorMd &inp, const IvVectorKd &parvals)"+"{\n")
+        
         # define output of function
         f.write("// define output\n")
         f.write("IvVectorNd out;\n")
+        
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
         for v in self.state_vars:
             f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
             ind += 1
+            
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
         for v in self.inp_vars:
             f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
             ind += 1
+            
+        # assign values to parameters
+        f.write("// assign values to input symbols \n")
+        ind = 0
+        for v in self.params:
+            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+            ind += 1
+        
         # compute vector field bounds
         f.write("// compute bounds on vector field\n")
-
         ind = 0
         for v in self.state_vars:
             ky = str(v)
@@ -163,22 +174,32 @@ class writetocpp:
         # Initialize Function
         f = open(self.StateMatFile,"a")
         # open function 
-        f.write("IvMatrixNNd StateMat(const IvVectorNd &state, const IvVectorMd &inp)"+"{\n")
+        f.write("IvMatrixNNd StateMat(const IvVectorNd &state, const IvVectorMd &inp, const IvVectorKd &parvals)"+"{\n")
         # define output of function
         f.write("// define output\n")
         f.write("IvMatrixNNd out;\n")
+        
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
         for v in self.state_vars:
             f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
             ind += 1
+            
         f.write("// assign values to input symbols \n")
         ind = 0
         # assign values to input symbols
         for v in self.inp_vars:
             f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
             ind += 1
+
+        # assign values to parameters
+        f.write("// assign values to parameters \n")
+        ind = 0
+        for v in self.params:
+            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+            ind += 1
+
         # compute matrix
         f.write("// compute matrix\n")
         for i in range(self.N):
@@ -202,10 +223,11 @@ class writetocpp:
         # Initialize Function
         f = open(self.InputMatFile,"a")
         # open function 
-        f.write("IvMatrixNMd InputMat(const IvVectorNd &state, const IvVectorMd &inp)"+"{\n")
+        f.write("IvMatrixNMd InputMat(const IvVectorNd &state, const IvVectorMd &inp, const IvVectorKd &parvals)"+"{\n")
         # define output of function
         f.write("// define output\n")
         f.write("IvMatrixNMd out;\n")
+        
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
@@ -214,10 +236,19 @@ class writetocpp:
             ind += 1
         f.write("// assign values to input symbols \n")
         ind = 0
+        
         # assign values to input symbols
         for v in self.inp_vars:
             f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
             ind += 1
+
+        # assign values to parameters
+        f.write("// assign values to parameters \n")
+        ind = 0
+        for v in self.params:
+            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+            ind += 1
+
         # compute matrix
         f.write("// compute matrix\n")
         for i in range(self.N):
@@ -242,22 +273,32 @@ class writetocpp:
         f = open(self.ContErrorFile,"a")
         # open function 
         f.write("IvVectorNd ContError(const IvVectorNd &state, const IvVectorMd &inp,"+
-        "const IvVectorNd &StError, const IvVectorMd &InpCenter)"+"{\n")
+        "const IvVectorNd &StError, const IvVectorMd &InpCenter, const IvVectorKd &parvals)"+"{\n")
         # define output of function
         f.write("// define output\n")
         f.write("IvVectorNd out;\n")
+        
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
         for v in self.state_vars:
             f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
             ind += 1
+            
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
         for v in self.inp_vars:
             f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
             ind += 1
+            
+        # assign values to parameters
+        f.write("// assign values to parameters \n")
+        ind = 0
+        for v in self.params:
+            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+            ind += 1
+
         # assign values to error symbols
         f.write("// assign values to error symbols \n")
         ind = 0
@@ -296,7 +337,7 @@ class writetocpp:
         f = open(self.DimErrorFile,"a")
         # open function 
         f.write("Interval ContDimError(const IvVectorNd &state, const IvVectorMd &inp,"+
-        "const IvVectorNd &StError, const IvVectorMd &InpCenter, int dim)"+"{\n")
+        "const IvVectorNd &StError, const IvVectorMd &InpCenter, const IvVectorKd &parvals, int dim)"+"{\n")
         # define output of function
         f.write("// define output\n")
         f.write("Interval out;\n")
@@ -312,6 +353,14 @@ class writetocpp:
         for v in self.inp_vars:
             f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
             ind += 1
+            
+        # assign values to parameters
+        f.write("// assign values to parameters \n")
+        ind = 0
+        for v in self.params:
+            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+            ind += 1
+            
         # assign values to error symbols
         f.write("// assign values to error symbols \n")
         ind = 0
@@ -323,7 +372,8 @@ class writetocpp:
         for v in self.inp_vars:
             ky = str(v)
             f.write("Interval "+str(self.err_var[ky])+"= "+"inp("+str(ind)+")-"+"InpCenter("+str(ind)+");\n")
-            ind += 1                      
+            ind += 1
+            
         # compute linearization error
         f.write("// compute continuous time linearization error\n")
         ind = 0
@@ -382,35 +432,4 @@ class writetocpp:
         f.close();
         
 #end-class====================================================================================================
-
-#****************************************************************************************************
-# function to convert dynamics with floats to parametric dynamics
-#****************************************************************************************************
-
-def parDynamics(dynamics, state_vars, inp_vars, params, assignments, vals):
-    out = {}
-    out["dynamics"] = dynamics;
-    out["assignments"] = assignments;
-    out["params"] = params;
-    out["vals"] = vals;
-    s = {}
-    ide_list = []
-    token = 0;
-
-    # for ky in dynamics:
-    #     for exp in preorder_traversal( dynamics[ky] ):
-    #         if(isinstance(exp,(Float,Integer))):
-    #             ide = "var_"+str(exp)
-    #             if ide not in ide_list:
-    #                 ide_list.append(ide)
-    #                 s[ide] = var("par"+"_"+str(token), real=True)
-    #                 out["params"].append(s[ide])
-    #                 out["assignments"].append( str( s[ide] ) + " = " + str(exp) + ";" )
-    #                 out["vals"].append( float(exp) )
-    #                 out["dynamics"][ky] = out["dynamics"][ky].subs( exp, s[ide] )
-    #                 token += 1
-    return out;
-                    
-
-#end-function====================================================================================================
 

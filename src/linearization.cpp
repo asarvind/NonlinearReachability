@@ -7,6 +7,9 @@ public:
   
   /* Time step for discrete time approximation */
   double TimeStep;
+
+  /* Parameter values */
+  IvVectorKd parvals;
   
   /* Input to dynamical system, its center */
   IvVectorMd Inp, InpCenter;
@@ -22,7 +25,7 @@ public:
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
-  nonlinear(const IvVectorMd &Input){
+  nonlinear(const IvVectorMd &Input, const IvVectorKd &paramValues){
     N = StateDim;
     M = InputDim;
     TimeStep = StepSize;
@@ -36,8 +39,12 @@ public:
 	  eyeN(i,j) = Interval(0.0,0.0);
 	}
       }
-    }    
+    }
+    // assign parameter values
+    parvals = paramValues*1;
+    // assign input values
     Inp = Input*1;
+    // assign center of input
     for(int i=0; i<M; i++){
       double c = (Inp(i).lower()+Inp(i).upper())/2.0;
       InpCenter(i) = Interval(c,c);
@@ -54,27 +61,27 @@ public:
   
   // method to compute bounds on vector field
   IvVectorNd Field(const IvVectorNd &State){
-    return VectorField(State, Inp);
+    return VectorField(State, Inp, parvals);
   }
   // method to compute state action matrix in continuous time
   IvMatrixNNd ContStMat(const IvVectorNd &center){
-    return StateMat(center, InpCenter);
+    return StateMat(center, InpCenter, parvals);
   }
   // method to compute input action matrix in continuous time
   IvMatrixNMd ContInpMat(const IvVectorNd &center){
-    return InputMat(center, InpCenter);
+    return InputMat(center, InpCenter, parvals);
   }
   // method to compute continuous time taylor error (quadratic)
   IvVectorNd TaylorErr(const IvVectorNd &State, const IvVectorNd &center){
     IvVectorNd StError = State - center;
-    return ContError(State,Inp,StError,InpCenter);
+    return ContError(State,Inp,StError,InpCenter,parvals);
   }
   Interval TaylorErr(const IvVectorNd &State, const IvVectorNd &StError, int dim){
-    return ContDimError(State,Inp,StError,InpCenter,dim);
+    return ContDimError(State,Inp,StError,InpCenter,parvals,dim);
   }
   Interval TaylorErr(const IvVectorNd &State, const IvVectorNd &StError, const VectorNd &ReDir, const VectorNd &ImDir){
     Interval out = Interval(0,0);
-    IvVectorNd ErrVect = ContError(State,Inp,StError,InpCenter);
+    IvVectorNd ErrVect = ContError(State,Inp,StError,InpCenter,parvals);
     for(int i=0; i<StateDim; ++i){
       out += pow(ErrVect(i)*ReDir(i), 2) + pow(ErrVect(i)*ImDir(i), 2);
     }
@@ -83,9 +90,9 @@ public:
     return out;
   }
 
-  // method compute field at a point
+  // method to compute field at a point
   IvVectorNd PointField(const IvVectorNd &center){
-    IvVectorNd out =  VectorField(center, InpCenter);
+    IvVectorNd out =  VectorField(center, InpCenter, parvals);
     for( int i=0; i<N; ++i ){
       if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
 	cout<< out(i).lower() << " " << out(i).upper() << " field error\n";
@@ -301,7 +308,7 @@ public:
     IvVectorNd OptStateErr = state - middle(state);
 
     // compute error without splitting
-    VectorNd baseErr = radius( ContError(state,Inp,OptStateErr,InpCenter) );
+    VectorNd baseErr = radius( ContError(state,Inp,OptStateErr,InpCenter,parvals) );
 
     IvVectorNd StError, StartErr;
     // loop to compute optimal error
@@ -312,7 +319,7 @@ public:
       for(int j=0; j<N; j++){
 	StError = StartErr*1;
   	StError[j] /= 2.0;
-	VectorNd splitErr = radius( ContError(state,Inp,StError,InpCenter) );
+	VectorNd splitErr = radius( ContError(state,Inp,StError,InpCenter,parvals) );
 
 	// loop to compute infinity norm of relative error
 	error = 0;

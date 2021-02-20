@@ -2,10 +2,10 @@
 
 int main(){
   ifstream readlower, readupper, simhypar;
-  double lb, ub;
+  double lb, ub, num, den;
   string line;
   
-  // read state initial lower bounds
+  // read state initial bounds
   readlower.open( "src/pywrite/stlb.txt" );
   readupper.open( "src/pywrite/stub.txt" );
   int ind = 0;
@@ -19,7 +19,7 @@ int main(){
   readlower.close();
   readupper.close();
     
-  // read input initial lower bounds
+  // read input bounds
   readlower.open( "src/pywrite/inplb.txt" );
   readupper.open( "src/pywrite/inpub.txt" );
   ind = 0;
@@ -28,6 +28,19 @@ int main(){
     readlower >> lb;
     readupper >> ub;
     inpbounds( i ) = Interval( lb, ub );
+  }
+  readlower.close();
+  readupper.close();
+
+  // read parameter values
+  readlower.open( "src/pywrite/parden.txt" );
+  readupper.open( "src/pywrite/parnum.txt" );
+  ind = 0;
+  IvVectorKd parvals;
+  for( int i = 0; i<pardim; ++i ){
+    readlower >> den;
+    readupper >> num;
+    parvals( i ) = Interval( num, num )/Interval(den, den);
   }
   readlower.close();
   readupper.close();
@@ -47,11 +60,11 @@ int main(){
   simhypar.close();
 
   // bloating
-  ioureach bloatobj( initstate, inpbounds, tStep/10, logDivs );
+  ioureach bloatobj( initstate, inpbounds, parvals, tStep/10, logDivs );
   bloatobj.simulate( tStep );
 
   // create reachset object
-  ioureach reachobj( initstate, inpbounds, tStep, logDivs );
+  ioureach reachobj( initstate, inpbounds, parvals, tStep, logDivs );
   reachobj.doBloat = false;
   reachobj.bounds = bloatobj.MaxBounds;
   reachobj.MaxBounds = bloatobj.MaxBounds;

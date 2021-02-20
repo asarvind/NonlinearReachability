@@ -437,6 +437,8 @@ class fieldUi:
         f = self.dynamicsEntry.get( "1.0", "end" )
         f = f.replace("\n","")
         f = f.replace(" ","")
+        
+        # refresh display in dynamics display and delete entry
         if f != "" and v != "":
             dynamics[ v ] = f
             self.dynamicsEntry.delete( "1.0", "end" )
@@ -689,6 +691,44 @@ def simulate():
     lbobj.close()
     ubobj.close()
 
+    # parameters
+    params = []
+    for mykey in parEqs:
+        params.append( var( mykey, real=True ) )
+
+    # parametric equation list
+    eqlist = []
+    for mykey in parEqs:
+        eqlist.append( eval( mykey + "- nsimplify(" + parEqs[ mykey ] + ")" ) )    
+
+    # values of parameters
+    valTuple = solve( eqlist, tuple(params) )
+    if type( valTuple ) is list:
+        vals =  list( valTuple[0] )
+    elif type(valTuple) is dict:
+        vals = list( valTuple.values() )
+    ind = 0
+    for mypar in params:
+        parnum, parden = fraction( vals[ ind ] )
+        ind += 1
+    # reset index
+    ind = 0
+
+    # write parameter bounds
+    numobj = open( "src/pywrite/parnum.txt", "w" )
+    denobj = open( "src/pywrite/parden.txt", "w" )
+    ind = 0
+    for p in params:
+        numpar, denpar = fraction( vals[ ind ] )
+        numobj.write( str( numpar ) + " " )
+        denobj.write( str( denpar ) + " " )
+        ind += 1
+    # close file objects
+    numobj.close()
+    denobj.close()
+    # reset index
+    ind = 0
+
     #----------------------------------------------------------------------
     # write simulation parameters
     #----------------------------------------------------------------------
@@ -824,13 +864,12 @@ def process():
         vals =  list( valTuple[0] )
     elif type(valTuple) is dict:
         vals = list( valTuple.values() )
-    asgn = []
     ind = 0
     for mypar in params:
-        myval1, myval2 = fraction( vals[ ind ] )
-        asgn.append( str( mypar ) + " = " + "Interval(" + str( myval1 ) + "," + str( myval1 ) +
-                     ")/Interval(" + str( myval2 ) + "," + str( myval2 ) + ")" + ";" )
+        parnum, parden = fraction( vals[ ind ] )
         ind += 1
+    # reset index
+    ind = 0
 
     # dynamics in symbolic form
     dynEqs = {}
@@ -853,10 +892,22 @@ def process():
         lbobj.write( str( inpBounds[mykey][0] ) + " ")
         ubobj.write( str( inpBounds[mykey][1] ) + " ")
     lbobj.close()
-    ubobj.close()    
+    ubobj.close()
+
+    # write parameter values
+    numobj = open( "src/pywrite/parnum.txt", "w" )
+    denobj = open( "src/pywrite/parden.txt", "w" )
+    ind = 0
+    for p in params:
+        numpar, denpar = fraction( vals[ ind ] )
+        numobj.write( str( numpar ) + " " )
+        denobj.write( str( denpar ) + " " )
+        ind += 1
+    # reset index
+    ind = 0
 
     # process and write to c++ format
-    writetocpp(dynEqs, state_vars, inp_vars, params, asgn, vals)
+    writetocpp(dynEqs, state_vars, inp_vars, params, vals)
 
     # change edit state button
     editStButton[ "command" ] = editstate
