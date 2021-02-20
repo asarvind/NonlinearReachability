@@ -72,17 +72,15 @@ class writetocpp:
                 self.inpmat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.inp_vars[j]))
                 InpFun = lambdify(self.state_vars+self.inp_vars+self.params,self.inpmat[i][j])
                 self.InpMat[i,j] = InpFun(*(initlist))
+        # taylor error
         self.linerr = {}
         for i in range(self.N):
             ky = str(self.state_vars[i])
             out_expr = 0
             for r in self.state_vars+self.inp_vars:
                 for s in self.state_vars+self.inp_vars:
-                    if simplify(r-s) == 0:
-                        expr = (dynamics[ky].diff(r,s))/4
-                    else:
-                        expr = (dynamics[ky].diff(r,s))/2
-                        out_expr += expr*self.err_var[str(r)]*self.err_var[str(s)]
+                    expr = (dynamics[ky].diff(r,s))/2
+                    out_expr += expr*self.err_var[str(r)]*self.err_var[str(s)]
             self.linerr[ky] = simplify(out_expr)
             
         # filenames for writing

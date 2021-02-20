@@ -623,10 +623,6 @@ class editpar( parWin ):
         parWin.__init__( self )
         self.parClButton.destroy()
         self.parDelButton.destroy()
-        self.parEntryButton[ "text" ] =  "symbolic processing completed"
-
-    def parEntryButtonFn( self ):
-        pass0
 
 
 #----------------------------------------------------------------------
