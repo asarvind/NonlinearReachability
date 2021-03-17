@@ -23,3 +23,5 @@ rand9: src/randmain.cpp
 execute: $(executable)
 	time ./$(executable)
 
+# test comment
+
