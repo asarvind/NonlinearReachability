@@ -131,7 +131,7 @@ public:
       L.InpMatCont = ContInpMat(L.center);
     }
     L.ErrTaylor = TaylorErr(L.region,L.center);
-    L.ErrCont = L.shift + L.ErrTaylor;
+    L.ErrCont = L.shift + L.ErrTaylor - L.StMatCont*L.center - L.InpMatCont*InpCenter;
   }
 
   // method to perform discrete time linearization
@@ -151,10 +151,7 @@ public:
     // Discrete time error
     L.ErrDis =
       L.ErrCont*TimeStep + ( A*L.ErrCont*pow(TimeStep,2)/2 + SqA*L.ErrCont*epsilon/2 +
-			     SqA*A*(L.region-L.center)*epsilon/6 +
-			     SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2 );
-    // add shift due to non-centered action
-    L.ErrDis += L.center - L.StMatDis*L.center;
+			     SqA*A*L.region*epsilon/6 + SqA*L.InpMatCont*Inp*epsilon/2 );
   }
 
   // method to compute valid region of linearization
@@ -177,12 +174,17 @@ public:
       // Discrete time error
       L.ErrDis =
 	L.ErrCont*delta + ( A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
-			       SqA*A*(L.region-L.center)*epsilon/6 +
-			       SqA*L.InpMatCont*(Inp-InpCenter)*epsilon/2 );
-      // add shift due to non-centered action
-      L.ErrDis += L.center - L.StMatDis*L.center;
+			       SqA*A*L.region*epsilon/6 +
+			       SqA*L.InpMatCont*Inp*epsilon/2 );
       // update region
-      IvVectorNd NextRegion = L.StMatDis*L.state + L.InpMatDis*(Inp-InpCenter) + L.ErrDis;
+      IvVectorNd NextRegion = L.StMatDis*L.state + L.InpMatDis*Inp + L.ErrDis;
+
+      // print NextRegion and previous region
+      for( int j=0; j<N; ++j){
+	cout << NextRegion( j ).upper() - L.region(j).upper() << "\n";
+      }
+      cout << "done\n";
+      
       if(is_subset(NextRegion,L.region)){
 	valid = true;
 	break;
@@ -206,6 +208,7 @@ public:
 	  exit(0);
       }
     }
+    exit(0);
   }
   
   //----------------------------------------------------------------------

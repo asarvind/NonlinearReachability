@@ -228,7 +228,7 @@ VectorNd radius(const IvVectorNd &x){
 // check containment between interval vectors
 bool is_subset(const IvVectorNd &x, const IvVectorNd &y){
   bool out = true;
-  for(int i=1; i<StateDim; ++i){
+  for(int i=0; i<StateDim; ++i){
     out = out && (subset(x(i),y(i)));
   }
   return out;
@@ -237,7 +237,7 @@ bool is_subset(const IvVectorNd &x, const IvVectorNd &y){
 // check non-empty intersection between interval vectors
 bool is_overlap(const IvVectorNd &x, const IvVectorNd &y){
   bool out = true;
-  for(int i=1; i<StateDim; ++i){
+  for(int i=0; i<StateDim; ++i){
     out = out && (overlap(x(i),y(i)));
   }
   return out;

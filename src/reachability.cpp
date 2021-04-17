@@ -298,7 +298,7 @@ public:
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
 	iou[j][k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*(Inp-InpCenter) + L.ErrDis;
+	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].MinSum( addvect );
 	iou[j][k].setBounds();
 	IvVectorNd boxBounds = L.StMatDis*L.state + addvect;
