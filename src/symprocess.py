@@ -5,84 +5,69 @@ import numpy as np
 import scipy.linalg as scl
 import math
 
+import os
+
 #****************************************************************************************************
 # class to process dynamics and write c++ functions
 #****************************************************************************************************
 
 class writetocpp:
-    def __init__(self,dynamics,state_vars,inp_vars,params=[],vals=[]):
-        self.state_vars = state_vars
-        self.inp_vars = inp_vars
-        self.params = params
-        self.vals  = vals
-        self.err_var = {}
-        new_vars = []
-        for v in self.state_vars+self.inp_vars:
-            self.err_var[str(v)] = var("e_"+str(v))
-            new_vars.append(self.err_var[str(v)])
-        # indices of state variables
-        self.state_ind = {}
-        ind = 0
-        for v in self.state_vars:
-            self.state_ind[str(v)] = ind
-            ind += 1
+    def __init__(self,dynamics, tempOrder = 10):
+        # specify all symbolic variables
+        stVars = list( var( list( dynamics["field"].keys() ) ) )
+        inpVars = list( var( list( dynamics["inp"].keys() ) ) )
+        allVars = stVars + inpVars
+        self.paramVars = var( list( dynamics["param"].keys() ) )
+        self.stVars = stVars
+        self.inpVars = inpVars
+        self.allVars = allVars
+
+        # define initial state bounds
+        self.initState = dynamics[ "initState" ]
+        
+        # define symbolic vector field
+        self.field = {}
+        for ky in dynamics["field"]:
+            self.field[ ky ] = nsimplify( eval( dynamics[ "field" ][ ky ] ) )
+
+        # define input
+        self.inp = dynamics["inp"]
+
+        # define parameters
+        self.param = dynamics["param"]
+
         # dimensions of state, input and parameters
-        self.N = len(self.state_vars)
-        self.M = len(self.inp_vars)
-        self.K = len( self.params )
+        self.N = len( self.field )
+        self.M = len( dynamics["inp"] )
+        self.K = len( dynamics["param"] )
+        self.tempOrder = tempOrder 
+        self.L = 1 # will be reset later
         
-        # time constants
-        self.TimeStep = 0.01 # step size
-        # store dynamics along each dimension and their corresponding lambda functions
-        self.dynamics = {}
-        # std string for replacement
-        for v in self.state_vars:
-            self.dynamics[str(v)] = dynamics[str(v)]
-        # symbolic state coefficient matrix  after linearization
-        # also compute concrete linearization matrix at origin 
-        self.StMat = np.zeros((self.N,self.N))
-        varis = self.inp_vars+self.state_vars
-        
-        # create list of values of state+input+parameter
-        initStUb = np.loadtxt("src/pywrite/stub.txt")
-        initStLb = np.loadtxt("src/pywrite/stlb.txt")
-        initInpLb = np.loadtxt("src/pywrite/inplb.txt")
-        initInpUb = np.loadtxt("src/pywrite/inpub.txt")
-        initlist = []
-        for i in range(initStUb.size):
-            initlist.append( ( initStUb[i] + initStLb[i] )/2.0 )
-        if initInpUb.size>1:
-            for i in range(initInpUb.size):
-                initlist.append( ( initInpUb[i] + initInpLb[i] )/2.0 )
-        else:
-              initlist.append( (initInpUb+initInpLb)/2 )  
-        initlist += self.vals
-        
-        self.statemat = [[None for j in range(self.N)] for i in range(self.N)]
-        for i in range(self.N):
-            for j in range(self.N):
-                self.statemat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.state_vars[j]))
-                StFun = lambdify(self.state_vars+self.inp_vars+self.params,self.statemat[i][j])
-                self.StMat[i,j] = StFun(*(initlist))
-        # inp coefficient matrix after expressions
-        self.inpmat = [[None for j in range(self.N)] for i in range(self.N)]
-        self.InpMat = np.zeros((self.N,self.M))
-        for j in range(self.M):
-            for i in range(self.N):
-                self.inpmat[i][j] = simplify(dynamics[str(self.state_vars[i])].diff(self.inp_vars[j]))
-                InpFun = lambdify(self.state_vars+self.inp_vars+self.params,self.inpmat[i][j])
-                self.InpMat[i,j] = InpFun(*(initlist))
-        # taylor error
+        # write vector field as a matrix
+        self.matField = list( self.field.values() )
+
+        # declare Taylor error variables
+        self.errVars = {}
+        for v in allVars:
+            self.errVars[ str(v) ] =  var( "e_"+str(v) )        # convert to vector
+        self.errVarsMat = Matrix( self.N+self.M, 1, list( self.errVars.values() ) )
+
+        # state action matrix
+        self.stJacobian = Matrix(self.matField).jacobian( Matrix( self.N, 1, stVars ))
+
+        # input action matrix
+        self.inpJacobian = Matrix(self.matField).jacobian( Matrix( self.M, 1, inpVars ))
+
+        # Taylor error
         self.linerr = {}
-        for i in range(self.N):
-            ky = str(self.state_vars[i])
-            out_expr = 0
-            for r in self.state_vars+self.inp_vars:
-                for s in self.state_vars+self.inp_vars:
-                    expr = (dynamics[ky].diff(r,s))/2
-                    out_expr += expr*self.err_var[str(r)]*self.err_var[str(s)]
-            self.linerr[ky] = simplify(out_expr)
-            
+                                                          
+        for ky in self.field:
+            self.linerr[ ky ] = 0.5*self.errVarsMat.transpose()*hessian( self.field[ ky ], tuple( allVars ) )*self.errVarsMat
+
+        # create pywrite and results folder
+        os.system( "mkdir -p src/pywrite" )
+        os.system( "mkdir -p results" )
+               
         # filenames for writing
         self.ConstantsFile = "src/pywrite/Constants.cpp"
         self.VectorFieldFile = "src/pywrite/VectorField.cpp"
@@ -90,7 +75,21 @@ class writetocpp:
         self.InputMatFile = "src/pywrite/InputMat.cpp"
         self.ContErrorFile = "src/pywrite/ContError.cpp"
         self.DimErrorFile = "src/pywrite/DimError.cpp"
-        # write constants
+        self.stLbFile = "src/pywrite/stlb.txt"
+        self.stUbFile = "src/pywrite/stub.txt"
+        self.inpLbFile = "src/pywrite/inplb.txt"
+        self.inpUbFile = "src/pywrite/inpub.txt"
+
+        # write all files
+        self.WriteTemp()
+        self.WriteConstants()
+        self.WriteVectorField()
+        self.WriteStateMat()
+        self.WriteInputMat()
+        self.WriteContError()
+        self.WriteDimError()        
+
+    def WriteConstants(self):
         f = open(self.ConstantsFile,"w")
         # write dimension of vector field
         f.write("const int StateDim = "+str(self.N)+";\n")
@@ -98,18 +97,9 @@ class writetocpp:
         f.write("const int InputDim = "+str(self.M)+";\n")
         # write number of parameters
         f.write("const int pardim = "+str(self.K)+";\n")
+        # write dimension of template
+        f.write("const int tempRows = "+str(self.L)+";\n")
 
-        # write time constants
-        self.TimeConstants()
-        f.write("const double StepSize = "+str(self.TimeStep)+";\n")
-        f.close()
-        self.WriteEig()
-        self.WriteVectorField()
-        self.WriteStateMat()
-        self.WriteInputMat()
-        self.WriteContError()
-        self.WriteDimError()
-        
     def WriteVectorField(self):
         # clear previous content on file
         f = open(self.VectorFieldFile, "w")
@@ -129,30 +119,29 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.state_vars:
-            f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
+        for v in self.field:
+            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.inp_vars:
-            f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
+        for v in self.inp:
+            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
             ind += 1
             
         # assign values to parameters
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.params:
-            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+        for v in self.param:
+            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
             ind += 1
         
         # compute vector field bounds
         f.write("// compute bounds on vector field\n")
         ind = 0
-        for v in self.state_vars:
-            ky = str(v)
-            mystr = "out("+str(ind)+")"+"= "+cxxcode(self.dynamics[ky]).replace("std::","")+";\n"
+        for ky in self.field:
+            mystr = "out("+str(ind)+")"+"= "+cxxcode(self.field[ky]).replace("std::","")+";\n"
             for repl in ["cos","sin","tan"]:
                 mystr = mystr.replace(repl,"my"+repl)
             f.write(mystr)
@@ -180,29 +169,29 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.state_vars:
-            f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
+        for v in self.field:
+            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         f.write("// assign values to input symbols \n")
         ind = 0
         # assign values to input symbols
-        for v in self.inp_vars:
-            f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
+        for v in self.inp:
+            f.write("Interval "+ v + "= "+"inp("+str(ind)+");\n")
             ind += 1
 
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.params:
-            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+        for v in self.param:
+            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # compute matrix
         f.write("// compute matrix\n")
         for i in range(self.N):
             for j in range(self.N):
-                mystr = "out("+str(i)+","+str(j)+")"+"= "+cxxcode(self.statemat[i][j]).replace("std::","")+";\n"
+                mystr = "out("+str(i)+","+str(j)+")"+"= "+cxxcode(self.stJacobian[i,j]).replace("std::","")+";\n"
                 for repl in ["cos","sin","tan"]:
                     mystr = mystr.replace(repl,"my"+repl)
                 f.write(mystr)
@@ -229,29 +218,29 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.state_vars:
-            f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
+        for v in self.field:
+            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
             ind += 1
         f.write("// assign values to input symbols \n")
         ind = 0
         
         # assign values to input symbols
-        for v in self.inp_vars:
-            f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
+        for v in self.inp:
+            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
             ind += 1
 
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.params:
-            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+        for v in self.param:
+            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # compute matrix
         f.write("// compute matrix\n")
         for i in range(self.N):
             for j in range(self.M):
-                mystr = "out("+str(i)+","+str(j)+")"+"= "+cxxcode(self.inpmat[i][j]).replace("std::","")+";\n"
+                mystr = "out("+str(i)+","+str(j)+")"+"= "+cxxcode(self.inpJacobian[i,j]).replace("std::","")+";\n"
                 for repl in ["cos","sin","tan"]:
                     mystr = mystr.replace(repl,"my"+repl)
                 f.write(mystr)
@@ -279,42 +268,40 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.state_vars:
-            f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
+        for v in self.field:
+            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.inp_vars:
-            f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
+        for v in self.inp:
+            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
             ind += 1
             
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.params:
-            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+        for v in self.param:
+            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # assign values to error symbols
         f.write("// assign values to error symbols \n")
         ind = 0
-        for v in self.state_vars:
-            ky = str(v)
-            f.write("Interval "+str(self.err_var[ky])+"= "+"StError("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+str(self.errVars[ky])+"= "+"StError("+str(ind)+");\n")
             ind += 1
         ind = 0
-        for v in self.inp_vars:
-            ky = str(v)
-            f.write("Interval "+str(self.err_var[ky])+"= "+"inp("+str(ind)+")-"+"InpCenter("+str(ind)+");\n")
-            ind += 1                      
+        for ky in self.inp:
+            f.write("Interval "+str(self.errVars[ky])+"= "+"inp("+str(ind)+")-"+"InpCenter("+str(ind)+");\n")
+            ind += 1
+            
         # compute linearization error
         f.write("// compute continuous time linearization error\n")
         ind = 0
-        for v in self.state_vars:
-            ky = str(v)
-            mystr = "out("+str(ind)+")"+"= "+cxxcode(self.linerr[ky]).replace("std::","")+";\n";
+        for ky in self.linerr:
+            mystr = "out("+str(ind)+")"+"= "+cxxcode(self.linerr[ky][0]).replace("std::","")+";\n";
             for repl in ["cos","sin","tan"]:
                 mystr = mystr.replace(repl,"my"+repl)
             f.write(mystr)
@@ -342,42 +329,39 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.state_vars:
-            f.write("Interval "+str(v)+"= "+"state("+str(ind)+");\n")
+        for v in self.field:
+            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
             ind += 1
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.inp_vars:
-            f.write("Interval "+str(v)+"= "+"inp("+str(ind)+");\n")
+        for v in self.inp:
+            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
             ind += 1
             
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.params:
-            f.write("Interval "+str(v)+"= "+"parvals("+str(ind)+");\n")
+        for v in self.param:
+            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
             ind += 1
             
         # assign values to error symbols
         f.write("// assign values to error symbols \n")
         ind = 0
-        for v in self.state_vars:
-            ky = str(v)
-            f.write("Interval "+str(self.err_var[ky])+"= "+"StError("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+str(self.errVars[ky])+"= "+"StError("+str(ind)+");\n")
             ind += 1
         ind = 0
-        for v in self.inp_vars:
-            ky = str(v)
-            f.write("Interval "+str(self.err_var[ky])+"= "+"inp("+str(ind)+")-"+"InpCenter("+str(ind)+");\n")
+        for ky in self.inp:
+            f.write("Interval "+str(self.errVars[ky])+"= "+"inp("+str(ind)+")-"+"InpCenter("+str(ind)+");\n")
             ind += 1
             
         # compute linearization error
         f.write("// compute continuous time linearization error\n")
         ind = 0
-        for v in self.state_vars:
-            ky = str(v)
-            mystr = "out = "+cxxcode(self.linerr[ky]).replace("std::","")+";\n";
+        for ky in self.linerr:
+            mystr = "out = "+cxxcode(self.linerr[ky][0]).replace("std::","")+";\n";
             for repl in ["cos","sin","tan"]:
                 mystr = mystr.replace(repl,"my"+repl)
             # open if statement
@@ -392,42 +376,158 @@ class writetocpp:
         # close function
         f.write("}")
         f.close()
-        
 
-    def TimeConstants(self):
-        # step size
-        d = (np.absolute(np.linalg.matrix_power(self.StMat,3))).sum(1)
-        x = (6*np.amin((np.reciprocal(d))*0.01))**(1/3)
-        d = (np.absolute(np.matmul(np.matmul(self.StMat,self.StMat),self.InpMat))).sum(1)
-        y = (2*np.amin(np.reciprocal(d))*0.01)**(1/3)
-        # self.TimeStep = np.minimum(x,y)
-        # self.TimeStep = np.minimum(self.TimeStep,1)
-        # n = math.ceil(-1*math.log10(self.TimeStep))
-        # self.TimeStep = round(self.TimeStep,n)
-        self.TimeStep = 0.1
+    def WriteTemp(self):
+        # compute value replacements in state action matrix
+        repl = []
+        for ky in self.field:
+            repl.append( self.initState[ ky ][0] )
+        for ky in self.inp:
+            repl.append( self.inp[ ky ][0] )
+        for v in self.paramVars:
+            repl.append( self.param[ str(v) ] )
 
-    def WriteEig(self):
-        _,V = np.linalg.eig(self.StMat);
+        # compute state action matrix at origin
+        stmatfn = lambdify( self.allVars + self.paramVars, self.stJacobian, modules="numpy" )
+        stmatorigin = stmatfn( *repl )
+
+        # compute eigenvectors
+        _,V = np.linalg.eig(stmatorigin);
         ReV = np.real(V);
         ImV = np.imag(V);
-        f = open(self.ConstantsFile,"a")
-        re_arr_str = "\n" + "const double ReEV[StateDim][StateDim] = {"
-        im_arr_str = "\n" + "const double ImEV[StateDim][StateDim] = {"
-        for i in range(self.N):
-            re_col_str = " {"
-            im_col_str = " {"
-            for j in range(self.N):
-                re_col_str += " " + str(ReV[i,j]) + ", ";
-                im_col_str += " " + str(ImV[i,j]) + ", ";
-            re_col_str += "},"
-            im_col_str += "},"
-            re_arr_str += re_col_str
-            im_arr_str += im_col_str
-        re_arr_str += " };\n"
-        im_arr_str += " };\n"
-        f.write(re_arr_str)
-        f.write(im_arr_str)
-        f.close();
+
+        # write eigenvectors to txt file (1st column is real part, 2nd column is imag part)
+        np.savetxt( "src/pywrite/eigRe.txt", ReV, delimiter = " " )
+        np.savetxt( "src/pywrite/eigIm.txt", ReV, delimiter = " " )
+
+        # compute template matrix
+        tempMat = stmatorigin
+        appendMat = stmatorigin
+        for i in range( self.tempOrder ):
+            appendMat = np.matmul( stmatorigin, appendMat )
+            tempMat = np.concatenate( ( tempMat, appendMat ), axis = 0 )
+        # add eigenvectors real and imaginary projections to template matrix
+        tempMat = np.concatenate( ( tempMat, np.transpose( ReV ) ) )
+        tempMat = np.concatenate( ( tempMat, np.transpose( ImV ) ) )
+        # remove repeated rows
+        tempMat = np.unique( tempMat, axis = 0 )
+
+        # add identity template at the top
+        tempMat = np.concatenate( (np.identity(self.N), tempMat), axis = 0)
+
+        # write template matrix
+        np.savetxt( "src/pywrite/polytopetemplate.txt", tempMat, delimiter = " " )
+
+        # set number of rows of template in self for writing
+        self.L = tempMat.shape[0]
         
 #end-class====================================================================================================
+
+#====================================================================================================
+# function to process dynamics
+#====================================================================================================
+def preprocess( model, server = None ):
+    symstart = time.time() # start timer for symbolic processing
+    # perform symbolic processing and write c++ files
+    writetocpp( model )
+    symend = time.time()
+    
+    # compile c++ file
+    if server is None:
+        compstart = time.time()
+        os.system( "make compile10" )
+        compend = time.time()
+        print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart  )
+        
+    else:
+        pth = server[ "toolpath" ]
+        # remove pywrite and results directory in host
+        execstr = "ssh " + server[ "name" ] + " \"" + "rm -rf "
+        execstr += pth + "/src/pywrite "
+        execstr += pth + "/results; "
+
+        # make fresh pywrite directory
+        execstr += "mkdir "
+        execstr += pth + "/src/pywrite; "
+
+        # make fresh results directory
+        execstr += "mkdir "
+        execstr += pth + "/results\" "
+        os.system( execstr )
+        
+        # copy files to pywrite directory
+        execstr = "scp " + "src/pywrite/* " + server[ "name" ]
+        execstr += ":" + pth + "/src/pywrite/"
+        os.system( execstr )
+
+        # compile inside server
+        execstr = "ssh " + server[ "name" ] + " \"cd " + pth 
+        execstr += "/;" + " make compile9; cd\""
+        compstart = time.time()
+        os.system( execstr )
+        compend = time.time()
+
+        print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart, " secs" )
+
+#====================================================================================================
+
+#====================================================================================================
+# function to simulate
+#====================================================================================================
+def simulate( model, hypar, server = None ):
+    # write initial state bounds
+    lbobj = open( "src/pywrite/stlb.txt", "w" )
+    ubobj = open( "src/pywrite/stub.txt", "w" )
+    for mykey in model[ "initState" ]:
+        lbobj.write( str( model[ "initState" ][mykey][0] ) + " ")
+        ubobj.write( str( model[ "initState" ][mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()
+
+    # write input bounds
+    lbobj = open( "src/pywrite/inplb.txt", "w" )
+    ubobj = open( "src/pywrite/inpub.txt", "w" )
+    for mykey in model[ "inp" ]:
+        lbobj.write( str( model[ "inp" ][mykey][0] ) + " ")
+        ubobj.write( str( model[ "inp" ][mykey][1] ) + " ")
+    lbobj.close()
+    ubobj.close()
+
+    # write values of numerator and denominator of parameters
+    numobj = open( "src/pywrite/parnum.txt", "w" )
+    denobj = open( "src/pywrite/parden.txt", "w" )
+    for mykey in model[ "param" ]:
+        numpar, denpar = fraction( model[ "param" ][ mykey ] )
+        numobj.write( str( numpar ) + " " )
+        denobj.write( str( denpar ) + " " )
+    # close file objects
+    numobj.close()
+    denobj.close()
+
+    # write simulation hyperparameters
+    simwrite = open( "src/pywrite/simpars.txt", "w" )
+    simstr = str( hypar[ "maxTime" ] ) + " " + str( hypar[ "logDivs" ] ) + " " + str( hypar[ "timeStep" ] ) + " " \
+        + str( hypar[ "zonOrder" ] ) + " " + str( hypar[ "refineFact" ] )
+    simwrite.write( simstr )
+    simwrite.close()
+
+    # run executable
+    if server is None:
+        os.system( "make execute" )
+    else:
+        pth = server[ "toolpath" ]
+        # copy files to server
+        execstr = "scp " + "src/pywrite/*.txt " + server[ "name" ]
+        execstr += ":" + pth + "/src/pywrite/"
+        os.system( execstr )
+        
+        # execute inside server
+        execstr =  "ssh " + server[ "name" ] + " \"cd "
+        execstr += pth + "/; " + "make execute\"; cd;"
+        os.system( execstr )
+
+
+    
+
+
 

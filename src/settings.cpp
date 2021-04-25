@@ -163,6 +163,8 @@ typedef Eigen::Matrix<Interval,InputDim,1> IvVectorMd;
 typedef Eigen::Matrix<int,StateDim,1> IntVectorNd;
 typedef Eigen::Matrix<double,StateDim,1> VectorNd;
 typedef Eigen::Matrix<Interval,pardim,1> IvVectorKd;
+typedef Eigen::Matrix<Interval,tempRows,1> IvVectorLd; // interval vector of bounds on polytope type
+typedef Eigen::Matrix<Interval,Eigen::Dynamic,StateDim> IvMatrixLNd; // template matrix type
 
 // Function to compute vector field, continuous state and input matrices
 // and continuous error from linearization.
@@ -185,6 +187,15 @@ IvVectorNd join(IvVectorNd x, IvVectorNd y){
   return out;
 }
 
+IvVectorLd join(IvVectorLd x, IvVectorLd y){
+  IvVectorLd out;
+  for(int i=0; i<tempRows; i++){
+    out(i) = hull(x(i),y(i));
+  }
+  return out;
+}
+
+
 // meet of interval vectors
 IvVectorNd meet(IvVectorNd x, IvVectorNd y){
   IvVectorNd out;
@@ -196,6 +207,32 @@ IvVectorNd meet(IvVectorNd x, IvVectorNd y){
       cout<< y(i).lower() << " " << y(i).upper() << "\n intersection error\n";
       exit(0);
     }
+    if (not overlap(x(i),y(i)) ){
+	cout << x(i).lower() << " " << x(i).upper() << "\n";
+	cout << y(i).lower() << " " << y(i).upper() << "\n";
+	cout << "meet error\n";
+	exit(0);
+      }
+  }
+  return out;
+}
+
+IvVectorLd meet(IvVectorLd x, IvVectorLd y){
+  IvVectorLd out;
+  for(int i=0; i<tempRows; i++){
+    out(i) = intersect(x(i),y(i));
+    if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
+      cout << "blunder";
+      cout<< x(i).lower() << " " << x(i).upper() << "\n";
+      cout<< y(i).lower() << " " << y(i).upper() << "\n intersection error\n";
+      exit(0);
+    }
+    if ( not overlap(x(i),y(i)) ){
+	cout << x(i).lower() << " " << x(i).upper() << "\n";
+	cout << y(i).lower() << " " << y(i).upper() << "\n";
+	cout << "meet error\n";
+	exit(0);
+      }   
   }
   return out;
 }

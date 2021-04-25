@@ -19,10 +19,9 @@ public:
     dim = StateDim;
     order = 2;
     center *= 0;
-    for(int i=0; i<order; ++i){
-      IvMatrixNNd M;
-      M *= 0;
-      GenMat.push_back(M);
+    GenMat.resize( order );
+    for( int i = 0; i<order; ++i){
+      GenMat[i] *= 0;
     }
     // create [-1,1]^n vector
     for(int i=0; i<dim; ++i){
@@ -39,14 +38,10 @@ public:
     order = neworder;
     center *= 0;
     bounds *= 0;
-    vector<IvMatrixNNd> newGenMat;
-    for(int i=0; i<order; ++i){
-      IvMatrixNNd M;
-      M *= 0;
-      newGenMat.push_back(M);
-    }
     GenMat.resize( order );
-    GenMat = newGenMat;
+    for(int i=0; i<order; ++i){
+      GenMat[i] *= 0;
+    }
   }
   
   //----------------------------------------------------------------------
@@ -103,6 +98,25 @@ public:
     return out;
   }
 
+  //----------------------------------------------------------------------
+  // refine with a threshold
+  //----------------------------------------------------------------------
+  void refine( double thres ){
+    IvVectorNd addvect;
+    IvVectorNd compvect = getBounds();
+    IvMatrixNNd resetmat;
+    for( int i=0; i<dim; ++i ){
+      if( ( compvect(i).upper() - bounds(i).upper() ) > thres*width( bounds(i) ) || ( bounds(i).lower() - compvect(i).lower() ) > thres*width( bounds(i) ) ){
+	addvect(i) = bounds(i);
+	resetmat(i,i) *= 0;
+      }
+      else{
+	resetmat(i,i) += 1;
+      }
+    }
+    prod( resetmat );
+    MinSum( addvect );
+  }
 
 
   // close ZonNd class
@@ -138,6 +152,9 @@ public:
 
   // order of zonotope
   int zonOrder;
+
+  // threshold for refinement
+  double refinethreshold;
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
@@ -177,6 +194,7 @@ public:
     TimeStep = tstep;
     zonOrder = (iou[0][0]).order;
     LogDivs = k;
+    refinethreshold = 100;
     SimNum = 0;
     doBloat = true;
   }
@@ -293,6 +311,8 @@ public:
     #pragma omp parallel for collapse(2)
     for(int j=0; j<intrs; ++j){
       for(int k=0; k<divs; ++k){
+	iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	iou[j][k].refine( refinethreshold );
 	LinVals L;
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);

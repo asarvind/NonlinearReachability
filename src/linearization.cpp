@@ -28,7 +28,6 @@ public:
   nonlinear(const IvVectorMd &Input, const IvVectorKd &paramValues){
     N = StateDim;
     M = InputDim;
-    TimeStep = StepSize;
     // set identity matrix
     for(int i=0; i<StateDim; i++){
       for(int j=0; j<StateDim; j++){
@@ -51,12 +50,16 @@ public:
     }
     
     // set eigenvectors
+    ifstream eigReFile( "src/pywrite/eigRe.txt" );
+    ifstream eigImFile( "src/pywrite/eigIm.txt" );
     for(int i=0; i<N; ++i){
       for(int j=0; j<N; ++j){
-	EvRe[i](j) = ReEV[j][i];
-	EvIm[i](j) = ImEV[j][i];
+	eigReFile >> EvRe[i](j);
+	eigImFile >> EvIm[j][i];
       }
     }
+    eigReFile.close();
+    eigImFile.close();
   }
   
   // method to compute bounds on vector field
@@ -178,12 +181,6 @@ public:
 			       SqA*L.InpMatCont*Inp*epsilon/2 );
       // update region
       IvVectorNd NextRegion = L.StMatDis*L.state + L.InpMatDis*Inp + L.ErrDis;
-
-      // print NextRegion and previous region
-      for( int j=0; j<N; ++j){
-	cout << NextRegion( j ).upper() - L.region(j).upper() << "\n";
-      }
-      cout << "done\n";
       
       if(is_subset(NextRegion,L.region)){
 	valid = true;
@@ -208,7 +205,6 @@ public:
 	  exit(0);
       }
     }
-    exit(0);
   }
   
   //----------------------------------------------------------------------
