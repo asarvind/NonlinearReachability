@@ -331,8 +331,8 @@ public:
     #pragma omp parallel for collapse(2)
     for(int j=0; j<intrs; ++j){
       for(int k=0; k<divs; ++k){
-	iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	iou[j][k].refine( refmat, invrefmat );
+	//iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	//iou[j][k].refine( refmat, invrefmat );
 	LinVals L;
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
