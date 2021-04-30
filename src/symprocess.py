@@ -397,8 +397,8 @@ class writetocpp:
         ImV = np.imag(V);
 
         # write eigenvectors to txt file (1st column is real part, 2nd column is imag part)
-        np.savetxt( "src/pywrite/eigRe.txt", ReV, delimiter = " " )
-        np.savetxt( "src/pywrite/eigIm.txt", ReV, delimiter = " " )
+        np.savetxt( "src/pywrite/eigRe.txt", np.identity(self.N), delimiter = " " )
+        np.savetxt( "src/pywrite/eigIm.txt", np.identity(self.N), delimiter = " " )
 
         # write state action matrix at origin and its pseudo inverse
         np.savetxt( "src/pywrite/storigin.txt", stmatorigin, delimiter = " " )
