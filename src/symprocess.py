@@ -400,26 +400,10 @@ class writetocpp:
         np.savetxt( "src/pywrite/eigRe.txt", ReV, delimiter = " " )
         np.savetxt( "src/pywrite/eigIm.txt", ReV, delimiter = " " )
 
-        # compute template matrix
-        tempMat = stmatorigin
-        appendMat = stmatorigin
-        for i in range( self.tempOrder ):
-            appendMat = np.matmul( stmatorigin, appendMat )
-            tempMat = np.concatenate( ( tempMat, appendMat ), axis = 0 )
-        # add eigenvectors real and imaginary projections to template matrix
-        tempMat = np.concatenate( ( tempMat, np.transpose( ReV ) ) )
-        tempMat = np.concatenate( ( tempMat, np.transpose( ImV ) ) )
-        # remove repeated rows
-        tempMat = np.unique( tempMat, axis = 0 )
-
-        # add identity template at the top
-        tempMat = np.concatenate( (np.identity(self.N), tempMat), axis = 0)
-
-        # write template matrix
-        np.savetxt( "src/pywrite/polytopetemplate.txt", tempMat, delimiter = " " )
-
-        # set number of rows of template in self for writing
-        self.L = tempMat.shape[0]
+        # write state action matrix at origin and its pseudo inverse
+        np.savetxt( "src/pywrite/storigin.txt", stmatorigin, delimiter = " " )
+        np.savetxt( "src/pywrite/invstorigin.txt", np.linalg.pinv( stmatorigin ), delimiter = " " )
+        
         
 #end-class====================================================================================================
 
@@ -507,7 +491,7 @@ def simulate( model, hypar, server = None ):
     # write simulation hyperparameters
     simwrite = open( "src/pywrite/simpars.txt", "w" )
     simstr = str( hypar[ "maxTime" ] ) + " " + str( hypar[ "logDivs" ] ) + " " + str( hypar[ "timeStep" ] ) + " " \
-        + str( hypar[ "zonOrder" ] ) + " " + str( hypar[ "refineFact" ] )
+        + str( hypar[ "zonOrder" ] )
     simwrite.write( simstr )
     simwrite.close()
 

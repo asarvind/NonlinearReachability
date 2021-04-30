@@ -7,10 +7,10 @@
 class ZonNd{
 public:
   int dim, order;
-  IvVectorNd bounds;
+  IvVectorNd bounds, refinebounds;
   
   vector<IvMatrixNNd> GenMat;
-  IvVectorNd center, CoeffVect;
+  IvVectorNd center, coeffBounds;
 
   //----------------------------------------------------------------------
   // constructor
@@ -19,14 +19,13 @@ public:
     dim = StateDim;
     order = 2;
     center *= 0;
-    for(int i=0; i<order; ++i){
-      IvMatrixNNd M;
-      M *= 0;
-      GenMat.push_back(M);
+    GenMat.resize( order );
+    for( int i = 0; i<order; ++i){
+      GenMat[i] *= 0;
     }
     // create [-1,1]^n vector
     for(int i=0; i<dim; ++i){
-      CoeffVect(i) = Interval(-1.0,1.0);
+      coeffBounds(i) = Interval(-1.0,1.0);
     }
   }
 
@@ -39,14 +38,11 @@ public:
     order = neworder;
     center *= 0;
     bounds *= 0;
-    vector<IvMatrixNNd> newGenMat;
+    refinebounds *= 0;
+    GenMat.resize( order );
     for(int i=0; i<order; ++i){
-      IvMatrixNNd M;
-      M *= 0;
-      newGenMat.push_back(M);
+      GenMat[i] *= 0;
     }
-    GenMat.resize( zonOrder );
-    GenMat = newGenMat;
   }
   
   //----------------------------------------------------------------------
@@ -67,7 +63,7 @@ public:
     IvVectorNd y = x-c;
     // update center
     center += c;    
-    IvVectorNd b = *(GenMat.rbegin())*CoeffVect;
+    IvVectorNd b = *(GenMat.rbegin())*coeffBounds;
     // shift generators left
     vector<IvMatrixNNd>::reverse_iterator itr = GenMat.rbegin();
     vector<IvMatrixNNd>::reverse_iterator next_itr = GenMat.rbegin();
@@ -90,19 +86,57 @@ public:
   //----------------------------------------------------------------------
   // set bounds
   //----------------------------------------------------------------------
-  void setBounds(){
+  void setBounds( IvMatrixNNd A){
     bounds = getBounds();
+    refinebounds = getBounds( A );
   }
 
-  // compute bounds on the zonotope
+  // compute projection bounds on the zonotope
   IvVectorNd getBounds(){
     IvVectorNd out = center*1;
     for(vector<IvMatrixNNd>::iterator itr=GenMat.begin(); itr!=GenMat.end(); ++itr){
-      out += (*itr)*CoeffVect;
+      out += (*itr)*coeffBounds;
     }
     return out;
   }
 
+  IvVectorNd getBounds( const IvMatrixNNd &A ){
+    IvVectorNd out = A*center;
+    for( int i=0; i<order; ++i ){
+      out += ( A*GenMat[i] )*coeffBounds;
+    }
+    return out;
+  }
+
+  //----------------------------------------------------------------------
+  // refine with a threshold
+  //----------------------------------------------------------------------
+  void refine( double thres, IvMatrixNNd A, IvMatrixNNd invA ){
+    // change basis of zonotope
+    prod( A );
+
+    // get bounds in transformed basis
+    IvVectorNd compvect = getBounds();
+    
+    IvVectorNd addvect; // initialize sum vector for refinement
+    IvMatrixNNd resetmat; // initialize reset matrix for refinement
+
+    // compute above matrices
+    for( int i=0; i<dim; ++i ){
+      if( ( compvect(i).upper() - refinebounds(i).upper() ) > thres*width( refinebounds(i) ) || ( refinebounds(i).lower() - compvect(i).lower() ) > thres*width( refinebounds(i) ) ){
+	addvect(i) += refinebounds(i);
+	resetmat(i,i) *= 0;
+      }
+      else{
+	resetmat(i,i) += 1;
+      }
+    }
+    prod( resetmat );
+    MinSum( addvect );
+
+    // reset basis to original
+    prod( invA );
+  }
 
 
   // close ZonNd class
@@ -126,6 +160,9 @@ public:
   
   // maximum bounds on the reachable set in the simulated time horizon
   IvVectorNd MaxBounds;
+
+  // compute directional bounds used for refinement
+  IvVectorNd refinebounds;
   
   // time interval;
   Interval SimTime;
@@ -138,6 +175,9 @@ public:
 
   // order of zonotope
   int zonOrder;
+
+  // threshold for refinement
+  double refinethreshold;
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
@@ -168,23 +208,39 @@ public:
   // boolean variable for doing bloating
   bool doBloat;
 
+  // matrices used for refinement of zonotope
+  IvMatrixNNd refinedirs, invrefinedirs;
+
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
-  ioureach(const IvVectorNd &State, const IvVectorMd &Input, double tstep, int k)
-    :nonlinear(Input){
+  ioureach(const IvVectorNd &State, const IvVectorMd &Input, const IvVectorKd &parvals, double tstep, int k)
+    :nonlinear(Input, parvals){
     InitState = State;
     TimeStep = tstep;
+    zonOrder = (iou[0][0]).order;
     LogDivs = k;
-    zonOrder = iou[0][0].order;
+    refinethreshold = 100;
     SimNum = 0;
     doBloat = true;
-    intrs = 1;
+
+    // set refdirs
+    ifstream eigBasisFile( "src/pywrite/eigRealBasis.txt" );
+    double readval; 
+    for( int i=0; i<N; ++i ){
+      for( int j=0; j<N; ++j ){
+	eigBasisFile >> readval;
+	refinedirs(i,j) += readval;
+      }
+    }
+    eigBasisFile.close();
+    invrefinedirs = refinedirs.inverse();
   }
 
   //======================================================================
   // Methods
   //======================================================================
+
 
   //----------------------------------------------------------------------
   /* Compute optimal division vectors along different directions 
@@ -219,35 +275,32 @@ public:
   // Method: compute iou representation
   //----------------------------------------------------------------------
   void SetIou(){
-    intrs = 1;
-    int numDivs = 1;
+    SetDivVecs();
+    // divide state into iou
     int divs = pow(2,LogDivs);
-    IvVectorNd ubox[ 128 ];
-    IvVectorNd vbox[ 128 ];
-    for( int i=0; i<divs; ++i ){
-      ubox[ i ] = bounds*1;
-    }
-    for(int i=0; i<LogDivs; i++){
-      for(int j=0; j<numDivs; j++){
-	IvVectorNd sbox = ubox[j];
-	splitBox bx = split( sbox );
-	vbox[ 2*j ] = bx.boxLeft*1;
-	vbox[ 2*j + 1 ] = bx.boxRight*1;
+    int q, d;
+    q = 0;
+    d = 0;
+    Interval iv, delta;
+    for(int i=0; i<intrs; i++){
+      for(int j=0; j<divs; j++){
+	// reset zonotope
+	iou[i][j] = ZonNd();
+	iou[i][j].resetOrder( zonOrder );
+	q = j;
+	IvVectorNd addvect;
+	for(int k=0; k<N; k++){
+	  d = DivVecs[i](k);
+	  iv = bounds(k);
+	  delta = (Interval(iv.upper(),iv.upper())-Interval(iv.lower(),iv.lower()))/d;
+	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
+	  q /= d;
+	}
+	// set zonotope value
+	iou[i][j].MinSum(addvect);
+	iou[i][j].setBounds( refinedirs );
       }
-      numDivs *= 2;
-      for( int j=0; j<numDivs; ++j ){
-	ubox[ j ] = vbox[ j ]*1;
-      }
     }
-    for(int j=0; j<divs; j++){
-      // reset zonotope
-      iou[0][j] = ZonNd();
-      iou[0][j].resetOrder( zonOrder );
-      IvVectorNd addvect = ubox[ j ]*1;
-      // set zonotope value
-      iou[0][j].MinSum(addvect);
-      iou[0][j].setBounds();
-    }    
   }
 
 
@@ -263,8 +316,39 @@ public:
       U = join(U,iou[0][i].bounds);
     }
     bounds = U*1; // bounds initialized
+    // recursively get U and intersect with bounds
+    for(int i=1; i<intrs; i++){
+      U = iou[i][0].bounds;
+      for(int j=1; j<divs; j++){
+	U = join(U, iou[i][j].bounds);
+      }
+      bounds = meet(bounds,U);
+    }
     MaxBounds = join( MaxBounds, bounds );
   }
+
+    //----------------------------------------------------------------------
+  // Compute bounds from iou
+  //----------------------------------------------------------------------
+  void SetRefineBounds(){
+    IvVectorNd U;
+    int divs = pow(2,LogDivs);
+    // initialize bounds as union of elements in first intersection
+    U = iou[0][0].refinebounds;
+    for(int i=1; i<divs; i++){
+      U = join(U,iou[0][i].refinebounds);
+    }
+    refinebounds = U*1; // bounds initialized
+    // recursively get U and intersect with bounds
+    for(int i=1; i<intrs; i++){
+      U = iou[i][0].refinebounds;
+      for(int j=1; j<divs; j++){
+	U = join(U, iou[i][j].refinebounds);
+      }
+      refinebounds = meet(refinebounds,U);
+    }
+  }
+
 
   //----------------------------------------------------------------------
   // bloating initial state
@@ -275,9 +359,7 @@ public:
     bounds = InitState;
     LinRegion( L );
     Interval delta = Interval(0,TimeStep);
-    // next bounds
     bounds = L.region;
-    //bounds = L.StMatDis*bounds + L.InpMatDis*(Inp - InpCenter) + L.ErrDis;
     MaxBounds = bounds;
     SimTime = delta;
   }
@@ -290,29 +372,35 @@ public:
     #pragma omp parallel for collapse(2)
     for(int j=0; j<intrs; ++j){
       for(int k=0; k<divs; ++k){
+	iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	iou[j][k].refinebounds = meet( refinebounds, iou[j][k].refinebounds );
+	iou[j][k].refine( refinethreshold, refinedirs, invrefinedirs );
 	LinVals L;
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
 	iou[j][k].prod(L.StMatDis);
-	iou[j][k].MinSum(L.InpMatDis*(Inp-InpCenter) + L.ErrDis);
-	iou[j][k].setBounds();
+	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	iou[j][k].MinSum( addvect );
+	iou[j][k].setBounds( refinedirs );
+	// IvVectorNd boxBounds = L.StMatDis*L.state + addvect;
+	// iou[j][k].bounds = meet( boxBounds, iou[j][k].bounds );
       }
     }
     SetBounds();
+    SetRefineBounds();
   }
 
 
   //----------------------------------------------------------------------
   // flowpipe computation for a time period
   //----------------------------------------------------------------------
-  void flow(double T, double MaxFlowTime, bool isrand){
-    if(isrand){
-      SetRandIou();
-    }
-    else{
-      SetIou();
-    };
+  void flow(double T, double MaxFlowTime){
+    // set iou
+    SetIou();
+
+    SetBounds();
+    SetRefineBounds();
     
     double FlowTime = 0;
     bool do_iter = true;
@@ -340,7 +428,7 @@ public:
   //----------------------------------------------------------------------
   // Simulation
   //----------------------------------------------------------------------
-  void simulate(const double T, double IouResetTime, bool isrand){
+  void simulate(const double T, double IouResetTime){
 
     // initialize flowpipe on first simulation
     if(SimNum==0){
@@ -369,15 +457,14 @@ public:
        iou resets */
     while(SimTime.upper()<T){
       // compute flowpipe until IOU reset
-      flow(T,IouResetTime,isrand);
+      flow(T,IouResetTime);
     }
   }
 
   void simulate(double T){
     omp_set_num_threads(64);
     omp_set_nested(3);
-    intrs = 1;
-    simulate(T,T,false);
+    simulate(T,T);
   }
 
   //----------------------------------------------------------------------
@@ -420,135 +507,6 @@ public:
   }
 
 
-  //----------------------------------------------------------------------
-  // random simulation
-  //----------------------------------------------------------------------
-  IntVectorNd RandDivVecs(){
-    IntVectorNd out;
-    int q = LogDivs+1;
-    // create a random permulation 0:N-1
-    vector<int> P;
-    for(int i=0; i<N; ++i){
-      P.push_back(i);
-    }
-    shuffle(P.begin(),P.end(),default_random_engine( rand() ));
-    // assign division values at each dimension
-    for(int& ind : P) {
-      int l = rand()%q;
-      out(ind) = pow(2,l);
-      q -= l; 
-    }
-    cout << out << "\n" << "next\n";
-    return out;
-  }
-
-  void SetRandDivVecs(){
-    intrs = 0;
-    bool unique;
-    for(int i=0; i<N; ++i){
-      DivVecs[intrs] = RandDivVecs();	
-      // retain unique vectors in the list of optimum division vectors
-      // vectors should not be ones
-      unique = true;
-      unique = unique && (DivVecs[intrs].lpNorm<Eigen::Infinity>() > 1);
-      for(int l=0; l<intrs; ++l){
-	unique = unique && ((DivVecs[intrs]-DivVecs[l]).lpNorm<Eigen::Infinity>() > 0);
-      }
-      if(unique){
-	intrs += 1;
-      }
-    }
-    if(intrs==0){
-      for(int i=0; i<N; i++){
-	DivVecs[intrs](i) = 1;
-	intrs = 1;
-      }
-    }
-  }
-
-  void SetRandIou(){
-    SetRandDivVecs();
-    // divide state into iou
-    int divs = pow(2,LogDivs);
-    int q, d;
-    q = 0;
-    d = 0;
-    Interval iv, delta;
-    for(int i=0; i<intrs; i++){
-      for(int j=0; j<divs; j++){
-	// reset zonotope
-	iou[i][j] = ZonNd();
-	iou[i][j].resetOrder();
-	q = j;
-	IvVectorNd addvect;
-	for(int k=0; k<N; k++){
-	  d = DivVecs[i](k);
-	  iv = bounds(k);
-	  delta = (Interval(iv.upper(),iv.upper())-Interval(iv.lower(),iv.lower()))/d;
-	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
-	  q /= d;
-	}
-	// set zonotope value
-	iou[i][j].MinSum(addvect);
-	iou[i][j].setBounds();
-      }
-    }
-  }
-
-  void RandSim(double T, int seedNum){
-    srand( seedNum );
-    simulate(T,T,true);
-  }
-
-  //----------------------------------------------------------------------
-  // Split using l_\infty norm linearization error (Mathias method)
-  //----------------------------------------------------------------------
-  struct splitBox{
-    IvVectorNd boxLeft;
-    IvVectorNd boxRight;
-  };
-
-  splitBox split( const IvVectorNd &x ){
-    // compute linearization error
-    IvVectorNd c = middle( x );
-    IvVectorNd ec = TaylorErr( x, c );
-    VectorNd threshErr = radius( ec );
-    
-    double optErr = numeric_limits<double>::infinity(); // optimum error
-    splitBox out; // output
-    
-    for( int i=0; i<N; ++i ){
-      // create candidate left and right boxes
-      IvVectorNd testLeft = x;
-      IvVectorNd testRight = x;
-      testLeft( i ) = Interval( x( i ).lower(), c( i ).upper() );
-      testRight( i ) = Interval( c( i ).lower(), x( i ).upper() );
-
-      // calculate normalized measure of linearization error
-      IvVectorNd cl = middle( testLeft );
-      IvVectorNd cr = middle( testRight );
-      IvVectorNd errLeft = TaylorErr( testLeft, cl );
-      IvVectorNd errRight = TaylorErr( testRight, cr );
-      VectorNd eLeft = radius( errLeft );
-      VectorNd eRight = radius( errRight );
-      for( int j=0; j<N; ++j ){
-	eLeft( i ) /= max( 1e-10, threshErr( i ) );
-	eRight( i ) /= max( 1e-10, threshErr( i ) );
-      }
-      double err = ( eLeft.lpNorm<Eigen::Infinity>() )*( eRight.lpNorm<Eigen::Infinity>() );
-
-      // compute new optimum error and boxes
-      if( err < optErr ){
-	optErr = err;
-	out.boxLeft = testLeft;
-	out.boxRight = testRight;
-      }
-    }
-    return out;
-  }
-  
   
   // close ioureach class    
 };
-
-

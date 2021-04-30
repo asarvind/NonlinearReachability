@@ -99,16 +99,19 @@ public:
   }
 
   //----------------------------------------------------------------------
-  // refine with a threshold
+  // refine
   //----------------------------------------------------------------------
-  void refine( double thres ){
+  void refine( IvMatrixNNd mymat, IvMatrixNNd invmat ){
     IvVectorNd addvect;
     IvVectorNd compvect = getBounds();
+    IvVectorNd thresbounds = invmat*(mymat*bounds);
     IvMatrixNNd resetmat;
+    resetmat *= 0;
+    addvect *= 0;
     for( int i=0; i<dim; ++i ){
-      if( ( compvect(i).upper() - bounds(i).upper() ) > thres*width( bounds(i) ) || ( bounds(i).lower() - compvect(i).lower() ) > thres*width( bounds(i) ) ){
+      //cout << (compvect(i).upper() - bounds(i).upper()) - thres*width( bounds(i) )  << "\n";
+      if( ( ( compvect(i).upper() - thresbounds(i).upper() )  > 0 )  || ( ( thresbounds(i).lower() - compvect(i).lower() ) > 0 ) ) {
 	addvect(i) = bounds(i);
-	resetmat(i,i) *= 0;
       }
       else{
 	resetmat(i,i) += 1;
@@ -153,8 +156,11 @@ public:
   // order of zonotope
   int zonOrder;
 
-  // threshold for refinement
-  double refinethreshold;
+  // matrix required for refinement
+  IvMatrixNNd refmat;
+
+  // inverse of matrix used in refinement
+  IvMatrixNNd invrefmat;
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
@@ -194,9 +200,23 @@ public:
     TimeStep = tstep;
     zonOrder = (iou[0][0]).order;
     LogDivs = k;
-    refinethreshold = 100;
     SimNum = 0;
     doBloat = true;
+
+    // read refinemat and invrefinemat
+    ifstream refmatfile( "src/pywrite/storigin.txt");
+    ifstream invrefmatfile( "src/pywrite/invstorigin.txt");
+    double refmatval, invrefmatval;
+    for( int i=0; i<N; ++i ){
+      for( int j=0; j<N; ++j ){
+	refmatfile >> refmatval;
+	invrefmatfile >> invrefmatval;
+	refmat(i,j) += refmatval;
+	invrefmat(i,j) += invrefmatval;
+      }
+    }
+    refmatfile.close();
+    invrefmatfile.close();
   }
 
   //======================================================================
@@ -311,8 +331,8 @@ public:
     #pragma omp parallel for collapse(2)
     for(int j=0; j<intrs; ++j){
       for(int k=0; k<divs; ++k){
-	iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	iou[j][k].refine( refinethreshold );
+	//iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	//iou[j][k].refine( refmat, invrefmat );
 	LinVals L;
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
@@ -321,8 +341,6 @@ public:
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].MinSum( addvect );
 	iou[j][k].setBounds();
-	IvVectorNd boxBounds = L.StMatDis*L.state + addvect;
-	iou[j][k].bounds = meet( boxBounds, iou[j][k].bounds );
       }
     }
     SetBounds();
