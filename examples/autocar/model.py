@@ -53,7 +53,7 @@ autocar[ "initState" ] = initState
 hypar = {}
 hypar[ "timeStep" ] = 0.005
 hypar[ "maxTime" ] = 0.5
-hypar[ "zonOrder" ] = 100
+hypar[ "zonOrder" ] = 400
 hypar[ "logDivs" ] = 3
 hypar[ "refineFact" ] = 0.25
 

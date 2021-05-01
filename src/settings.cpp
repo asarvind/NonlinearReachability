@@ -64,10 +64,10 @@ Interval operator/(const Interval &x, const int &y){
 Interval operator/(const int &y,const Interval &x){
   return double(y)/x;
 }
-// Define functions to compute inverse trigonometric
+// Define functions to compute inverse trigonometric and trigonometric
 // mycos
 Interval mycos(const Interval &x){
-  Interval y = cos(x);
+  Interval y = cos(x + Interval(-1,1)*1e-10*x);
   if((isnan(y.lower())) || (isnan(y.upper()))){
     // cout << x.lower() << " " << x.upper() << " yes\n";
     Interval z(1.570,1.571);

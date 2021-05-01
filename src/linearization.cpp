@@ -98,7 +98,7 @@ public:
     IvVectorNd out =  VectorField(center, InpCenter, parvals);
     for( int i=0; i<N; ++i ){
       if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
-	cout<< out(i).lower() << " " << out(i).upper() << " field error\n";
+	cout<< "index: " << i << "values: " << out(i).lower() << " " << out(i).upper() << " field error\n";
 	  exit(0);
 	}      
     }
@@ -138,11 +138,16 @@ public:
   }
 
   // method to perform discrete time linearization
-  void DisLin(LinVals &L, bool recompute){    
+  void DisLin(LinVals &L, bool computeregion){    
     // time interval
     Interval delta = Interval(0,TimeStep);
     /* perform continuous time linearization */
-    LinRegion(L);
+    if(computeregion){
+      LinRegion(L);
+    }
+    else{
+      ContLin( L, true );
+    }
     IvMatrixNNd A = L.StMatCont;
     IvMatrixNNd SqA = A*A;
     // discrete time action matrices
@@ -252,12 +257,11 @@ public:
   }
 
   //----------------------------------------------------------------------
-  // optimal division vectors along a given dimension
+  // optimal division vectors along a given direction
   //----------------------------------------------------------------------
   OptErr OptDivision(const IvVectorNd &state, const VectorNd &ReDir, const VectorNd &ImDir, int K){
     OptErr out;
     out.err = numeric_limits<double>::infinity();
-    double error;
     for(int i=0; i<N; i++){
       out.divs[i] = 1;
     }
@@ -265,22 +269,26 @@ public:
     int optind = 0; 
     // error variables
     IvVectorNd OptStateErr = state - middle(state);
-    IvVectorNd StError, StartErr;
     // loop to compute optimal error
     for(int i=0; i<K; i++){
       optind = 0;
       // loop to compute error
-      StartErr = OptStateErr*1;
+      VectorNd comperrvect; // for storing different errors corresponding to divisions along different axis
+      {
+      #pragma omp parallel for
       for(int j=0; j<N; j++){
-	StError = StartErr*1;
+	IvVectorNd StError = OptStateErr;
   	StError[j] /= 2.0;
-	error = TaylorErr(state,StError,ReDir,ImDir).upper();
-	if(error<out.err){
-	  out.err = error;
+	comperrvect(j) = TaylorErr(state,StError,ReDir,ImDir).upper();
+      }
+      }
+      for(int j=0; j<N; j++){
+	if( comperrvect(j)<out.err ){
 	  optind = j;
-	  OptStateErr = StError*1;
+	  out.err = comperrvect(j);
 	}
       }
+      OptStateErr( optind ) /= 2.0;
       if(out.err>0){
 	out.divs[optind] *= 2;
       }
