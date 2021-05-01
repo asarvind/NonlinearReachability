@@ -64,6 +64,10 @@ class writetocpp:
         for ky in self.field:
             self.linerr[ ky ] = 0.5*self.errVarsMat.transpose()*hessian( self.field[ ky ], tuple( allVars ) )*self.errVarsMat
 
+        # remove old pywrite and results folder
+        os.system( "rm -rf src/pywrite" )
+        os.system( "rm -rf results" )
+
         # create pywrite and results folder
         os.system( "mkdir -p src/pywrite" )
         os.system( "mkdir -p results" )

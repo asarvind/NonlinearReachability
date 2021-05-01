@@ -498,7 +498,7 @@ public:
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
-	//multilin(L);
+	multilin(L);
 	iou[j][k].prod(L.StMatDis);
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].MinSum( addvect );
