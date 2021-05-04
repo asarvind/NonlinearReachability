@@ -171,7 +171,7 @@ public:
     IvMatrixNNd A = L.StMatCont;
     IvMatrixNNd SqA = A*A;
     bool valid = false;
-    for(int i=0; i<20; ++i){
+    for(int i=0; i<40; ++i){
       // discrete time action matrices
       L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
       L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
