@@ -58,11 +58,11 @@ initState[ "x7" ] = [-0.15, 0.15]
 
 initState[ "y1" ] = [-25 , -15]
 initState[ "y2" ] = [-0.5, 0.5]
-initState[ "y3" ] = [-0.2, 0.2]
-initState[ "y4" ] = [5, 6]
-initState[ "y5" ] = [-0.15, 0.15]
-initState[ "y6" ] = [-0.2, 0.2]
-initState[ "y7" ] = [-0.15, 0.15]
+initState[ "y3" ] = [-0.1, 0.1]
+initState[ "y4" ] = [5.5, 5.5]
+initState[ "y5" ] = [-0.1, 0.1]
+initState[ "y6" ] = [-0.1, 0.1]
+initState[ "y7" ] = [-0.1, 0.1]
 
 autocar[ "initState" ] = initState
 
@@ -71,7 +71,7 @@ autocar[ "initState" ] = initState
 #====================================================================================================
 hypar = {}
 hypar[ "timeStep" ] = 0.005
-hypar[ "maxTime" ] = 1
+hypar[ "maxTime" ] = 0.2
 hypar[ "zonOrder" ] = 400
 hypar[ "logDivs" ] = 4
 

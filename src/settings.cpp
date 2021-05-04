@@ -266,7 +266,7 @@ VectorNd radius(const IvVectorNd &x){
 bool is_subset(const IvVectorNd &x, const IvVectorNd &y){
   bool out = true;
   for(int i=0; i<StateDim; ++i){
-    out = out && (subset(x(i),y(i)));
+    out = out && ( (subset(x(i),y(i))) || ( (x(i).upper() == y(i).upper()) && (x(i).lower() == y(i).lower()) ) );
   }
   return out;
 }

@@ -179,6 +179,9 @@ public:
   // iou of interval vectors
   vector<IvVectorNd> iviou[StateDim];
 
+  // validity of indices of intersections
+  bool flagintrs[StateDim];
+
   //----------------------------------------------------------------------
   // Flowpipe
   //----------------------------------------------------------------------
@@ -209,12 +212,13 @@ public:
     SimNum = 0;
     doBloat = true;
 
-    // resize iviou union size
+    // resize iviou union size and set flagintrs
     {
       int divs = pow(2,LogDivs);
 #pragma omp parallel for
       for(int i=0; i<N; ++i){
 	iviou[i].resize(divs);
+	flagintrs[i] = true;
       }
     }
   }
@@ -455,16 +459,18 @@ public:
     int divs = pow(2,LogDivs);
     #pragma omp parallel for collapse(2)
     for(int j=0; j<intrs; ++j){
-      for(int k=0; k<divs; ++k){
-	//iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	//iou[j][k].refine( refmat, invrefmat );
-	LinVals L;
-	L.state = iou[j][k].bounds;
-	DisLin(L,true);
-	iou[j][k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	iou[j][k].MinSum( addvect );
-	iou[j][k].setBounds();
+      if( flagintrs[i] ){
+	for(int k=0; k<divs; ++k){
+	  //iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	  //iou[j][k].refine( refmat, invrefmat );
+	  LinVals L;
+	  L.state = iou[j][k].bounds;
+	  DisLin(L,true);
+	  iou[j][k].prod(L.StMatDis);
+	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	  iou[j][k].MinSum( addvect );
+	  iou[j][k].setBounds();
+	}
       }
     }
     SetBounds();
@@ -506,6 +512,7 @@ public:
       
       // update clocks
       SimTime += TimeStep;
+      cout << SimTime.upper() << " ";
       FlowTime += TimeStep;
 
       // update flowpipe and bounds
