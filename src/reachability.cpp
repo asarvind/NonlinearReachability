@@ -510,7 +510,7 @@ public:
       
       // update clocks
       SimTime += TimeStep;
-      cout << SimTime.upper() << " ";
+      cout << SimTime.upper() << "\n";
       FlowTime += TimeStep;
 
       // update flowpipe and bounds
