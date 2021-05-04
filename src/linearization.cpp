@@ -192,6 +192,7 @@ public:
 	break;
       }
       else{
+	NextRegion += Interval(-1,1)*1e-5*NextRegion;
 	L.region = join(L.region,NextRegion);
 	ContLin(L,false);
 	valid = false;

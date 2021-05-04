@@ -346,7 +346,7 @@ public:
     SetNewDivVecs();
     // divide state into iou
     int divs = pow(2,LogDivs);
-#pragma parallel omp for
+#pragma parallel omp for collapse(2)
     for(int i=0; i<ivintrs; i++){
       for(int j=0; j<divs; j++){
 	int q, d;
@@ -378,21 +378,35 @@ public:
   void SetBounds(){
     IvVectorNd U;
     int divs = pow(2,LogDivs);
-    // initialize bounds as union of elements in first intersection
-    U = iou[0][0].bounds;
-    for(int i=1; i<divs; i++){
-      U = join(U,iou[0][i].bounds);
-    }
-    bounds = U*1; // bounds initialized
+    // initialize bounds 
+    bounds *= numeric_limits<double>::infinity()*Interval(-1,1); 
     // recursively get U and intersect with bounds
-    for(int i=1; i<intrs; i++){
-      U = iou[i][0].bounds;
-      for(int j=1; j<divs; j++){
-	U = join(U, iou[i][j].bounds);
+    for(int i=0; i<intrs; i++){
+      if( flagintrs[i] ){
+	U = iou[i][0].bounds;
+	for(int j=1; j<divs; j++){
+	  U = join(U, iou[i][j].bounds);
+	}
       }
       bounds = meet(bounds,U);
     }
     MaxBounds = join( MaxBounds, bounds );
+  }
+  
+  //----------------------------------------------------------------------
+  // set validity of intersecting regions
+  //----------------------------------------------------------------------
+  void SetValidity(){
+    for(int i=0; i<intrs; ++i){
+      if( flagintrs[i] ){
+	IvVectorNd U = iou[i][0].bounds;
+	for(int j=0; j<N; ++j){
+	  U = join( U, bounds );
+	}
+	IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
+	flagintrs[i] = !( is_subset( checkU, U ) );	
+      }
+    }
   }
 
   //----------------------------------------------------------------------
@@ -457,18 +471,21 @@ public:
   void NextIou(){
     SetIvIou();
     int divs = pow(2,LogDivs);
-#pragma omp parallel for collapse(2)
-    for(int j=0; j<intrs; ++j){      
-      for(int k=0; k<divs; ++k){
-	//iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	//iou[j][k].refine( refmat, invrefmat );
-	LinVals L;
-	L.state = iou[j][k].bounds;
-	DisLin(L,true);
-	iou[j][k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	iou[j][k].MinSum( addvect );
-	iou[j][k].setBounds();
+#pragma omp parallel for
+    for(int j=0; j<intrs; ++j){
+      if( flagintrs[j] ){
+#pragma omp parallel for
+	for(int k=0; k<divs; ++k){
+	  //iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	  //iou[j][k].refine( refmat, invrefmat );
+	  LinVals L;
+	  L.state = iou[j][k].bounds;
+	  DisLin(L,true);
+	  iou[j][k].prod(L.StMatDis);
+	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	  iou[j][k].MinSum( addvect );
+	  iou[j][k].setBounds();
+	}
       }
     }
     SetBounds();
@@ -492,6 +509,7 @@ public:
       }
     }
     SetBounds();
+    SetValidity();
   }
 
   //----------------------------------------------------------------------
