@@ -494,18 +494,21 @@ public:
   void nextIou(){
     SetIvIou();
     int divs = pow(2,LogDivs);
-    #pragma omp parallel for collapse(2)
-    for(int j=0; (j<intrs) && flagintrs[j]; ++j){
-      for(int k=0; k<divs; ++k){
-	LinVals L;
-	L.state = iou[j][k].bounds;
-	L.state = meet(L.state,bounds);
-	DisLin(L,true);
-	multilin(L);
-	iou[j][k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	iou[j][k].MinSum( addvect );
-	iou[j][k].setBounds();
+#pragma omp parallel for
+    for(int j=0; (j<intrs); ++j){
+      if(flagintrs[j]){
+#pragma omp parallel for
+	for(int k=0; k<divs; ++k){
+	  LinVals L;
+	  L.state = iou[j][k].bounds;
+	  L.state = meet(L.state,bounds);
+	  DisLin(L,true);
+	  multilin(L);
+	  iou[j][k].prod(L.StMatDis);
+	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	  iou[j][k].MinSum( addvect );
+	  iou[j][k].setBounds();
+	}
       }
     }
     SetBounds();
