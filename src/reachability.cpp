@@ -217,21 +217,6 @@ public:
 	iviou[i].resize(divs);
       }
     }
-
-    // // read refinemat and invrefinemat
-    // ifstream refmatfile( "src/pywrite/storigin.txt");
-    // ifstream invrefmatfile( "src/pywrite/invstorigin.txt");
-    // double refmatval, invrefmatval;
-    // for( int i=0; i<N; ++i ){
-    //   for( int j=0; j<N; ++j ){
-    // 	refmatfile >> refmatval;
-    // 	invrefmatfile >> invrefmatval;
-    // 	refmat(i,j) += refmatval;
-    // 	invrefmat(i,j) += invrefmatval;
-    //   }
-    // }    
-    // refmatfile.close();
-    // invrefmatfile.close();
   }
 
   //======================================================================
@@ -440,8 +425,6 @@ public:
 	  LinVals newL;
 	  newL.state = meet( iviou[i][j], L.region );
 	  for(int r=0; r<N; ++r){
-	    // cout << newL.state(r).lower() << " " << newL.state(r).upper() << " check";
-	    //cout << L.region(r).lower() << " " << L.region(r).upper() << " " << iviou[i][j](r).lower() << " " << iviou[i][j](r).upper() << " check";
 	  }
 	  DisLin( newL, false );
 	  errvect[i].push_back( (newL.StMatDis - L.StMatDis)*newL.state + (newL.InpMatDis - L.InpMatDis)*Inp + newL.ErrDis );
@@ -477,7 +460,6 @@ public:
 	//iou[j][k].refine( refmat, invrefmat );
 	LinVals L;
 	L.state = iou[j][k].bounds;
-	L.state = meet(L.state,bounds);
 	DisLin(L,true);
 	iou[j][k].prod(L.StMatDis);
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;

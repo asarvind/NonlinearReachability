@@ -18,7 +18,7 @@ field["x7"]  = "mu/(x4*(lr+lf))*(CSf*(g*lr-u*hcg)*x3+(CSr*(g*lf+u*hcg)-CSf*(g*lr
 field["y1"] = "y4*cos(y5+y7)"
 field["y2"] = "y4*sin(y5+y7)"
 field["y3"] = "-K0*(y5+y7+y3)"
-field["y4"] = "-K1*( (x4-y4) + K2*(x1-y1) )"
+field["y4"] = "-K1*( (x4-y4) + K2*(x1-y1 - 20) )"
 field["y5"] = "y6"
 field["y6"] = "mu*m/(Iz*(lr+lf))*(lf*CSf*(g*lr-u*hcg)*y3+(lr*CSr*(g*lf+u*hcg)-lf*CSf*(g*lr-u*hcg))*y7-(lf*lf*CSf*(g*lr-u*hcg) + lr*lr*CSr*(g*lf+u*hcg))*y6/y4)"
 field["y7"]  = "mu/(y4*(lr+lf))*(CSf*(g*lr-u*hcg)*y3+(CSr*(g*lf+u*hcg)-CSf*(g*lr-u*hcg))*y7-(lf*CSf*(g*lr-u*hcg) + lr*CSr*(g*lf+u*hcg))*y6/y4)-y6"
@@ -56,7 +56,7 @@ initState[ "x5" ] = [-0.15, 0.15]
 initState[ "x6" ] = [-0.2, 0.2]
 initState[ "x7" ] = [-0.15, 0.15]
 
-initState[ "y1" ] = [15 , 25]
+initState[ "y1" ] = [-25 , -15]
 initState[ "y2" ] = [-0.5, 0.5]
 initState[ "y3" ] = [-0.2, 0.2]
 initState[ "y4" ] = [5, 6]
@@ -71,9 +71,9 @@ autocar[ "initState" ] = initState
 #====================================================================================================
 hypar = {}
 hypar[ "timeStep" ] = 0.005
-hypar[ "maxTime" ] = 0.5
-hypar[ "zonOrder" ] = 100
-hypar[ "logDivs" ] = 3
+hypar[ "maxTime" ] = 1
+hypar[ "zonOrder" ] = 400
+hypar[ "logDivs" ] = 4
 
 #====================================================================================================
 # set server
