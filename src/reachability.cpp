@@ -458,9 +458,9 @@ public:
     SetIvIou();
     int divs = pow(2,LogDivs);
     #pragma omp parallel for 
-    for(int j=0; j<intrs; ++j){
-      #pragma omp parallel for
+    for(int j=0; j<intrs; ++j){      
       if( flagintrs[j] ){
+	#pragma omp parallel for
 	for(int k=0; k<divs; ++k){
 	  //iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
 	  //iou[j][k].refine( refmat, invrefmat );
