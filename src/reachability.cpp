@@ -403,8 +403,8 @@ public:
 	for(int j=0; j<N; ++j){
 	  U = join( U, bounds );
 	}
-	IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
-	flagintrs[i] = !( is_subset( checkU, U ) );	
+      IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
+      flagintrs[i] = !( is_subset( checkU, U ) );	
       }
     }
   }
@@ -495,7 +495,7 @@ public:
     SetIvIou();
     int divs = pow(2,LogDivs);
     #pragma omp parallel for collapse(2)
-    for(int j=0; j<intrs; ++j){
+    for(int j=0; (j<intrs) && flagintrs[j]; ++j){
       for(int k=0; k<divs; ++k){
 	LinVals L;
 	L.state = iou[j][k].bounds;

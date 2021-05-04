@@ -7,7 +7,7 @@ autocar = {}
 # define field of autocar
 field = {}
 field["x1"] = "x4*cos(x5+x7)"
-field["x2"] = "x4*sin(x5+x7)"
+#field["x2"] = "x4*sin(x5+x7)"
 field["x3"] = "-K0*(x5+x7+x3)"
 field["x4"] = "u"
 field["x5"] = "x6"
@@ -16,7 +16,7 @@ field["x7"]  = "mu/(x4*(lr+lf))*(CSf*(g*lr-u*hcg)*x3+(CSr*(g*lf+u*hcg)-CSf*(g*lr
 
 # define field of autocar
 field["y1"] = "y4*cos(y5+y7)"
-field["y2"] = "y4*sin(y5+y7)"
+#field["y2"] = "y4*sin(y5+y7)"
 field["y3"] = "-K0*(y5+y7+y3)"
 field["y4"] = "-K1*( K2*(x4-y4) + (x1-y1 - 20) )"
 field["y5"] = "y6"
@@ -49,7 +49,7 @@ autocar["inp"] = {
 # define initial state of autocar
 initState = {}
 initState[ "x1" ] = [0, 0]
-initState[ "x2" ] = [0, 0]
+#initState[ "x2" ] = [0, 0]
 initState[ "x3" ] = [-0.2, 0.2]
 initState[ "x4" ] = [5, 6]
 initState[ "x5" ] = [-0.15, 0.15]
@@ -57,7 +57,7 @@ initState[ "x6" ] = [-0.2, 0.2]
 initState[ "x7" ] = [-0.15, 0.15]
 
 initState[ "y1" ] = [-25 , -15]
-initState[ "y2" ] = [-0.5, 0.5]
+#initState[ "y2" ] = [-0.5, 0.5]
 initState[ "y3" ] = [-0.1, 0.1]
 initState[ "y4" ] = [5.5, 5.5]
 initState[ "y5" ] = [-0.1, 0.1]
