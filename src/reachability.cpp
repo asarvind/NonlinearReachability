@@ -70,13 +70,15 @@ public:
     GenMat.push_back( M );  // added interval vector
 
     // reduce order
+    IvMatrixNNd K;
     for(int i=0; i<dim; ++i){
       for(int j=0; j<dim; ++j){
 	Interval u = GenMat[order-1]( i, j );
 	Interval v = GenMat[order]( i, j );
-	GenMat[order-1]( i, j ) = hull( u, v );
+	K( i, j ) = hull( u, v );
       }
     }
+    GenMat.push_back( K );
     GenMat.resize( order );
   }
   
