@@ -462,7 +462,7 @@ def preprocess( model, server = None ):
 #====================================================================================================
 # function to simulate
 #====================================================================================================
-def simulate( model, hypar, server = None ):
+def setvals( model, hypar, server = None ):
     # write initial state bounds
     lbobj = open( "src/pywrite/stlb.txt", "w" )
     ubobj = open( "src/pywrite/stub.txt", "w" )
@@ -501,7 +501,7 @@ def simulate( model, hypar, server = None ):
 
     # run executable
     if server is None:
-        os.system( "make execute" )
+        os.system( "make execute" )        
     else:
         pth = server[ "toolpath" ]
         # copy files to server
@@ -510,9 +510,9 @@ def simulate( model, hypar, server = None ):
         os.system( execstr )
         
         # execute inside server
-        execstr =  "ssh " + server[ "name" ] + " \"cd "
-        execstr += pth + "/; " + "make execute\"; cd;"
-        os.system( execstr )
+        #execstr =  "ssh " + server[ "name" ] + " \"cd "
+        #execstr += pth + "/; " + "make execute\"; cd;"
+        #os.system( execstr )
 
 
     
