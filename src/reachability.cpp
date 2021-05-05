@@ -63,7 +63,7 @@ public:
     center += c;
 
 
-    IvVectorNNd U = (GenMat[order-1] - GenMat[order -2])*CoeffVect;
+    IvVectorNd U = (GenMat[order-1] - GenMat[order -2])*CoeffVect;
     IvMatrixNNd M;
     M *= 0;
     for(int i=0; i<dim; ++i){
