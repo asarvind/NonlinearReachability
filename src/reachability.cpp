@@ -57,7 +57,7 @@ public:
   //----------------------------------------------------------------------
   // Minkowski sum with an interval vector
   //----------------------------------------------------------------------
-  void newMinSum( const IvVectorNd &x ){
+  void MinSum( const IvVectorNd &x ){
     IvVectorNd c = middle(x);
     // update center
     center += c;
@@ -77,7 +77,7 @@ public:
     GenMat.resize( order );
   }
   
-  void MinSum(const IvVectorNd &x){
+  void newMinSum(const IvVectorNd &x){
     IvVectorNd c = middle(x);
     IvVectorNd y = x-c;
     // update center
