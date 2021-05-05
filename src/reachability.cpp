@@ -57,32 +57,32 @@ public:
   //----------------------------------------------------------------------
   // Minkowski sum with an interval vector
   //----------------------------------------------------------------------
-  // void newMinSum( const IvVectorNd &x ){
-  //   IvVectorNd c = middle(x);
-  //   // update center
-  //   center += c;
+  void newMinSum( const IvVectorNd &x ){
+    IvVectorNd c = middle(x);
+    // update center
+    center += c;
 
-  //   IvMatrixNNd M;
-  //   M *= 0;
-  //   for(int i=0; i<dim; ++i){
-  //     M(i) = width( x(i) )*Interval(1,1);
-  //   }
-  //   GenMat.insert( GenMat.begin(), M );  // added interval vector
+    IvMatrixNNd M;
+    M *= 0;
+    for(int i=0; i<dim; ++i){
+      M(i,i) = width( x(i) )*Interval(1,1);
+    }
+    GenMat.insert( GenMat.begin(), M );  // added interval vector
 
-  //   // reduce order
-  //   IvMatrixNNd K;
-  //   for(int i=0; i<dim; ++i){
-  //     for(int j=0; j<dim; ++j){
-  // 	Interval u = GenMat[order-1]( i, j );
-  // 	Interval v = GenMat[order]( i, j );
-  // 	K( i, j ) = hull( u, v );
-  //     }
-  //   }
-  //   GenMat.insert( GenMat.begin(), K );
-  //   GenMat.resize( order );
-  // }
+    // reduce order
+    IvMatrixNNd K;
+    for(int i=0; i<dim; ++i){
+      for(int j=0; j<dim; ++j){
+  	Interval u = GenMat[order-1]( i, j );
+  	Interval v = GenMat[order]( i, j );
+  	K( i, j ) = hull( u, v );
+      }
+    }
+    GenMat.insert( GenMat.begin(), K );
+    GenMat.resize( order );
+  }
   
-  void newMinSum(const IvVectorNd &x){
+  void MinSum(const IvVectorNd &x){
     IvVectorNd c = middle(x);
     IvVectorNd y = x-c;
     // update center
