@@ -67,7 +67,7 @@ public:
     for(int i=0; i<dim; ++i){
       M(i) = width( x(i) )*Interval(1,1);
     }
-    GenMat.push_back( M );  // added interval vector
+    GenMat.push_front( M );  // added interval vector
 
     // reduce order
     IvMatrixNNd K;
@@ -78,7 +78,7 @@ public:
 	K( i, j ) = hull( u, v );
       }
     }
-    GenMat.push_back( K );
+    GenMat.push_front( K );
     GenMat.resize( order );
   }
   
