@@ -56,7 +56,30 @@ public:
 
   //----------------------------------------------------------------------
   // Minkowski sum with an interval vector
-  //----------------------------------------------------------------------  
+  //----------------------------------------------------------------------
+  void newMinSum( const IvVectorNd &x ){
+    IvVectorNd c = middle(x);
+    // update center
+    center += c;
+
+    IvMatrixNNd M;
+    M *= 0;
+    for(int i=0; i<dim; ++i){
+      M(i) = width( x(i) )*Interval(1,1);
+    }
+    GenMat.push_back( M );  // added interval vector
+
+    // reduce order
+    for(int i=0; i<dim; ++i){
+      for(int j=0; j<dim; ++j){
+	Interval u = GenMat[order-1]( i, j );
+	Interval v = GenMat[order]( i, j );
+	GenMat[order-1]( i, j ) = hull( u, v );
+      }
+    }
+    GenMat.resize( order );
+  }
+  
   void MinSum(const IvVectorNd &x){
     IvVectorNd c = middle(x);
     IvVectorNd y = x-c;
@@ -118,7 +141,7 @@ public:
       }
     }
     prod( resetmat );
-    MinSum( addvect );
+    newMinSum( addvect );
   }
 
 
@@ -333,7 +356,7 @@ public:
 	  q /= d;
 	}
 	// set zonotope value
-	iou[i][j].MinSum(addvect);
+	iou[i][j].newMinSum(addvect);
 	iou[i][j].setBounds();
       }
     }
@@ -483,7 +506,7 @@ public:
 	  DisLin(L,true);
 	  iou[j][k].prod(L.StMatDis);
 	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	  iou[j][k].MinSum( addvect );
+	  iou[j][k].newMinSum( addvect );
 	  iou[j][k].setBounds();
 	}
       }
@@ -506,7 +529,7 @@ public:
 	  multilin(L);
 	  iou[j][k].prod(L.StMatDis);
 	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	  iou[j][k].MinSum( addvect );
+	  iou[j][k].newMinSum( addvect );
 	  iou[j][k].setBounds();
 	}
       }
