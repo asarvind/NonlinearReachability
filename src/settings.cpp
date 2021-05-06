@@ -245,7 +245,7 @@ IvVectorNd middle(const IvVectorNd &x){
     double r = x( i ).upper();
     out(i) = ( Interval( r, r ) + Interval( l, l ) )/2.0;
     if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
-      cout<< out(i).lower() << " " << out(i).upper() << " center error\n";
+      cout<< l << " " << r << " center error\n";
       exit(0);
     }      
   }

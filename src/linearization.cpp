@@ -164,28 +164,35 @@ public:
 
   // method to compute valid region of linearization
   void LinRegion(LinVals &L){    
-    // time interval
-    Interval delta = Interval(0,TimeStep);
     /* perform continuous time linearization */
     ContLin(L,true);
     IvMatrixNNd A = L.StMatCont;
     IvMatrixNNd SqA = A*A;
     bool valid = false;
-    for(int i=0; i<1000; ++i){
-      // discrete time action matrices
+
+    // New region
+    IvVectorNd transIv = L.state;
+    int tdivs = 10;
+    Interval gap = Interval(TimeStep,TimeStep)/tdivs;
+    for( int i=0; i<10; ++i ){
+      Interval delta = hull( i*gap, (i+1)*gap );
       L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
       L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
+      IvVectorNd joinvect = L.ErrCont*delta + L.InpMatDis*Inp + L.StMatDis*L.state;
+      transIv = join( L.state, joinvect );
+    }
+
+    Interval delta = Interval( 0, TimeStep );
+    for(int i=0; i<1000; ++i){
       /* discrete time linearization error*/
       // square of delta
       Interval epsilon = pow(delta,3);
       // intial state and input action matrices
       // Discrete time error
-      L.ErrDis =
-	L.ErrCont*delta + ( A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
+      IvVectorNd NextRegion =
+	 transIv + ( A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
 			       SqA*A*L.region*epsilon/6 +
 			       SqA*L.InpMatCont*Inp*epsilon/2 );
-      // update region
-      IvVectorNd NextRegion = L.StMatDis*L.state + L.InpMatDis*Inp + L.ErrDis;
       
       if(is_subset(NextRegion,L.region)){
 	valid = true;
