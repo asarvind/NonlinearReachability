@@ -172,9 +172,9 @@ public:
 
     // New region
     IvVectorNd transIv = L.state;
-    int tdivs = 10;
+    int tdivs = 20;
     Interval gap = Interval(TimeStep,TimeStep)/tdivs;
-    for( int i=0; i<10; ++i ){
+    for( int i=0; i<20; ++i ){
       Interval delta = hull( i*gap, (i+1)*gap );
       L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
       L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
