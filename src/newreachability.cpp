@@ -275,8 +275,8 @@ public:
     for(int i=0; i<intrs; ++i){
       if( flagintrs[i] ){
 	IvVectorNd U = iou[i][0].bounds;
-	for(int j=0; j<N; ++j){
-	  U = join( U, bounds );
+	for(int j=1; j<N; ++j){
+	  U = join( U, iou[i][j].bounds );
 	}
       IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
       flagintrs[i] = !( is_subset( checkU, U ) );	
@@ -387,7 +387,7 @@ public:
       }
     }
     SetBounds();
-    //SetValidity();
+    SetValidity();
   }
 
   //----------------------------------------------------------------------
