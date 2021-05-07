@@ -373,7 +373,7 @@ public:
   }
 
   void nextIou(){
-    SetIvIou();
+    // SetIvIou();
     int divs = pow(2,LogDivs);
 #pragma omp parallel for collapse(2)
     for(int j=0; (j<intrs); ++j){
