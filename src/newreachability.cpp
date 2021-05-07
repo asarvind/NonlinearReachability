@@ -152,7 +152,12 @@ public:
     {
       #pragma omp parallel for
       for( int i=0; i<N; ++i){
-	OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
+	VectorNd vect;
+	vect *= 0;
+	vect(i) += 1;
+	VectorNd imvect = vect*0;
+	OptErr E = OptDivision(bounds,vect,imvect,LogDivs);
+	// OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
 	allDivVecs[i] = E.divs;
       }
     }
