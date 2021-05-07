@@ -223,6 +223,7 @@ public:
     int divs = pow(2,LogDivs);
 #pragma parallel omp for
     for(int i=0; i<ivintrs; i++){
+      #pragma parallel omp for
       if(flagintrs[i]){
 	for(int j=0; j<divs; j++){
 	  int q, d;
