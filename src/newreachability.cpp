@@ -221,27 +221,29 @@ public:
     SetNewDivVecs();
     // divide state into iou
     int divs = pow(2,LogDivs);
-#pragma parallel omp for collapse(2)
+#pragma parallel omp for
     for(int i=0; i<ivintrs; i++){
-      for(int j=0; j<divs; j++){
-	int q, d;
-	q = 0;
-	d = 0;
-	Interval iv, delta;
-	q = j;
-	IvVectorNd addvect;
-	for(int k=0; k<N; k++){
-	  d = DivVecs[i](k);
-	  iv = bounds(k);
-	  delta = (Interval(iv.upper(),iv.upper())-Interval(iv.lower(),iv.lower()))/d;
-	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
-	  q /= d;
+      if(flagintrs[i]){
+	for(int j=0; j<divs; j++){
+	  int q, d;
+	  q = 0;
+	  d = 0;
+	  Interval iv, delta;
+	  q = j;
+	  IvVectorNd addvect;
+	  for(int k=0; k<N; k++){
+	    d = DivVecs[i](k);
+	    iv = bounds(k);
+	    delta = (Interval(iv.upper(),iv.upper())-Interval(iv.lower(),iv.lower()))/d;
+	    addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
+	    q /= d;
+	  }
+	  // assign interval vector value after finding linearization region
+	  LinVals L;
+	  L.state = addvect;
+	  LinRegion(L);
+	  iviou[i][j] = L.region;
 	}
-	// assign interval vector value after finding linearization region
-	LinVals L;
-	L.state = addvect;
-	LinRegion(L);
-	iviou[i][j] = L.region;
       }
     }
   }
