@@ -2,33 +2,6 @@
 # include "setreps.cpp"
 
 
-  //----------------------------------------------------------------------
-  // refine
-  //----------------------------------------------------------------------
-  void refine( IvMatrixNNd mymat, IvMatrixNNd invmat ){
-    IvVectorNd addvect;
-    IvVectorNd compvect = getBounds();
-    IvVectorNd thresbounds = invmat*(mymat*bounds);
-    IvMatrixNNd resetmat;
-    resetmat *= 0;
-    addvect *= 0;
-    for( int i=0; i<dim; ++i ){
-      if( ( ( compvect(i).upper() - thresbounds(i).upper() )  > 0 )  || ( ( thresbounds(i).lower() - compvect(i).lower() ) > 0 ) ) {
-	addvect(i) = bounds(i);
-      }
-      else{
-	resetmat(i,i) += 1;
-      }
-    }
-    prod( resetmat );
-    newMinSum( addvect );
-  }
-
-
-  // close ZonNd class
-};
-
-
 //****************************************************************************************************
 // Intersection of Unions reach set class
 //****************************************************************************************************
@@ -279,17 +252,14 @@ public:
   // Compute bounds from iou
   //----------------------------------------------------------------------
   void SetBounds(){
-    IvVectorNd U;
     int divs = pow(2,LogDivs);
     // initialize bounds 
     bounds *= numeric_limits<double>::infinity()*Interval(-1,1); 
     // recursively get U and intersect with bounds
     for(int i=0; i<intrs; i++){
-      if( flagintrs[i] ){
-	U = iou[i][0].bounds;
-	for(int j=1; j<divs; j++){
-	  U = join(U, iou[i][j].bounds);
-	}
+      IvVectorNd U = iou[i][0].bounds;
+      for(int j=1; j<divs; j++){
+	U = join(U, iou[i][j].bounds);	
       }
       bounds = meet(bounds,U);
     }
@@ -345,8 +315,6 @@ public:
 	if( is_overlap( iviou[i][j], L.region ) ){
 	  LinVals newL;
 	  newL.state = meet( iviou[i][j], L.region );
-	  for(int r=0; r<N; ++r){
-	  }
 	  DisLin( newL, false );
 	  errvect[i].push_back( (newL.StMatDis - L.StMatDis)*newL.state + (newL.InpMatDis - L.InpMatDis)*Inp + newL.ErrDis );
 	}
@@ -405,7 +373,7 @@ public:
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
-	multilin(L);
+	//multilin(L);
 	iou[j][k].prod(L.StMatDis);
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].newMinSum( addvect );

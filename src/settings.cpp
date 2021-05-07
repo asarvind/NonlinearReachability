@@ -217,25 +217,7 @@ IvVectorNd meet(IvVectorNd x, IvVectorNd y){
   return out;
 }
 
-IvVectorLd meet(IvVectorLd x, IvVectorLd y){
-  IvVectorLd out;
-  for(int i=0; i<tempRows; i++){
-    out(i) = intersect(x(i),y(i));
-    if ( isnan( out(i).upper() ) || isnan( out(i).lower() ) ){
-      cout << "blunder";
-      cout<< x(i).lower() << " " << x(i).upper() << "\n";
-      cout<< y(i).lower() << " " << y(i).upper() << "\n intersection error\n";
-      exit(0);
-    }
-    if ( not overlap(x(i),y(i)) ){
-	cout << x(i).lower() << " " << x(i).upper() << "\n";
-	cout << y(i).lower() << " " << y(i).upper() << "\n";
-	cout << "meet error\n";
-	exit(0);
-      }   
-  }
-  return out;
-}
+
 
 // method to compute center of a state interval vector
 IvVectorNd middle(const IvVectorNd &x){
