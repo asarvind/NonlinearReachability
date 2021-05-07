@@ -1,129 +1,5 @@
 # include "linearization.cpp"
-
-
-//****************************************************************************************************
-// Zonotope class
-//****************************************************************************************************
-class ZonNd{
-public:
-  int dim, order;
-  IvVectorNd bounds;
-  
-  vector<IvMatrixNNd> GenMat;
-  IvVectorNd center, CoeffVect;
-
-  //----------------------------------------------------------------------
-  // constructor
-  //----------------------------------------------------------------------
-  ZonNd(){
-    dim = StateDim;
-    order = 2;
-    center *= 0;
-    GenMat.resize( order );
-    for( int i = 0; i<order; ++i){
-      GenMat[i] *= 0;
-    }
-    // create [-1,1]^n vector
-    for(int i=0; i<dim; ++i){
-      CoeffVect(i) = Interval(-1.0,1.0);
-    }
-  }
-
-  //======================================================================
-  // Methods
-  //======================================================================
-
-  // reset zonotope with a specified order
-  void resetOrder( int neworder ){
-    order = neworder;
-    center *= 0;
-    bounds *= 0;
-    GenMat.resize( order );
-    for(int i=0; i<order; ++i){
-      GenMat[i] *= 0;
-    }
-  }
-  
-  //----------------------------------------------------------------------
-  // Pre-multiply with a matrix
-  //----------------------------------------------------------------------
-  void prod(const IvMatrixNNd &M){
-    center = M*center;
-    for(vector<IvMatrixNNd>::iterator itr=GenMat.begin(); itr!= GenMat.end(); ++itr){      
-      *itr = M*(*itr);
-    }
-  }
-
-  //----------------------------------------------------------------------
-  // Minkowski sum with an interval vector
-  //----------------------------------------------------------------------  
-  void MinSum(const IvVectorNd &x){
-    IvVectorNd c = middle(x);
-    IvVectorNd y = x-c;
-    // update center
-    center += c;    
-    IvVectorNd b = *(GenMat.rbegin())*CoeffVect;
-    // shift generators left
-    vector<IvMatrixNNd>::reverse_iterator itr = GenMat.rbegin();
-    vector<IvMatrixNNd>::reverse_iterator next_itr = GenMat.rbegin();
-    ++next_itr;
-    vector<IvMatrixNNd>::reverse_iterator end_itr = GenMat.rend();
-    --end_itr;
-    while(itr!=end_itr){      
-      *itr = *(next_itr);
-      ++itr;
-      ++next_itr;
-    }
-    // compute first generator matrix
-      *(GenMat.begin()) *= 0;
-    for(int i=0; i<dim; ++i){
-      Interval r = b(i)+y(i);
-      (*(GenMat.begin()))(i,i) = (r.upper()-r.lower())/2;
-    }
-  }
-
-  //----------------------------------------------------------------------
-  // set bounds
-  //----------------------------------------------------------------------
-  void setBounds(){
-    bounds = getBounds();
-  }
-
-  // compute bounds on the zonotope
-  IvVectorNd getBounds(){
-    IvVectorNd out = center*1;
-    for(vector<IvMatrixNNd>::iterator itr=GenMat.begin(); itr!=GenMat.end(); ++itr){
-      out += (*itr)*CoeffVect;
-    }
-    return out;
-  }
-
-  //----------------------------------------------------------------------
-  // refine
-  //----------------------------------------------------------------------
-  void refine( IvMatrixNNd mymat, IvMatrixNNd invmat ){
-    IvVectorNd addvect;
-    IvVectorNd compvect = getBounds();
-    IvVectorNd thresbounds = invmat*(mymat*bounds);
-    IvMatrixNNd resetmat;
-    resetmat *= 0;
-    addvect *= 0;
-    for( int i=0; i<dim; ++i ){
-      if( ( ( compvect(i).upper() - thresbounds(i).upper() )  > 0 )  || ( ( thresbounds(i).lower() - compvect(i).lower() ) > 0 ) ) {
-	addvect(i) = bounds(i);
-      }
-      else{
-	resetmat(i,i) += 1;
-      }
-    }
-    prod( resetmat );
-    MinSum( addvect );
-  }
-
-
-  // close ZonNd class
-};
-
+# include "newsetreps.cpp"
 
 //****************************************************************************************************
 // Intersection of Unions reach set class
@@ -149,11 +25,11 @@ public:
   // log of number of elements in union
   int LogDivs;
   
-  // number of elements in intersection of zonotopes
+  // number of elements in union
   int intrs;
 
-  // number of elements in intersection of intervals
-  int ivintrs;
+  // number of elements in union
+  int ivintrs;  
 
   // order of zonotope
   int zonOrder;
@@ -175,8 +51,11 @@ public:
      contains unions. */
   ZonNd iou[StateDim][MaxDivs];
 
-  // iou array of interval vectors
-  IvVectorNd iviou[StateDim][MaxDivs];
+  // iou of interval vectors
+  vector<IvVectorNd> iviou[StateDim];
+
+  // validity of indices of intersections
+  bool flagintrs[StateDim];
 
   //----------------------------------------------------------------------
   // Flowpipe
@@ -203,25 +82,20 @@ public:
     :nonlinear(Input, parvals){
     InitState = State;
     TimeStep = tstep;
-    zonOrder = (iou[0][0]).order;
+    zonOrder = 1;
     LogDivs = k;
     SimNum = 0;
     doBloat = true;
 
-    // read refinemat and invrefinemat
-    ifstream refmatfile( "src/pywrite/storigin.txt");
-    ifstream invrefmatfile( "src/pywrite/invstorigin.txt");
-    double refmatval, invrefmatval;
-    for( int i=0; i<N; ++i ){
-      for( int j=0; j<N; ++j ){
-	refmatfile >> refmatval;
-	invrefmatfile >> invrefmatval;
-	refmat(i,j) += refmatval;
-	invrefmat(i,j) += invrefmatval;
+    // resize iviou union size and set flagintrs
+    {
+      int divs = pow(2,LogDivs);
+#pragma omp parallel for
+      for(int i=0; i<N; ++i){
+	iviou[i].resize(divs);
+	flagintrs[i] = true;
       }
     }
-    refmatfile.close();
-    invrefmatfile.close();
   }
 
   //======================================================================
@@ -236,16 +110,19 @@ public:
   void SetDivVecs(){
     intrs = 0;
     bool unique;
-    vector<IntVectorNd> allDivVecs;
-    allDivVecs.resize(N);
+
+    IntVectorNd allDivVecs[StateDim];
     
-    # pragma omp parallel for
-    for(int i=0; i<N; ++i){
-      OptErr oe = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
-      allDivVecs[i] =  oe.divs;
+    {
+      #pragma omp parallel for
+      for( int i=0; i<N; ++i){
+	OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
+	allDivVecs[i] = E.divs;
+      }
     }
     
     for(int i=0; i<N; ++i){
+      //OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
       DivVecs[intrs] = allDivVecs[i];
       // retain unique vectors in the list of optimum division vectors
       // vectors should not be ones
@@ -265,20 +142,23 @@ public:
       }
     }
   }
-  
+
   void SetNewDivVecs(){
     ivintrs = 0;
     bool unique;
-    vector<IntVectorNd>allDivVecs;
-    allDivVecs.resize(N);
+
+    IntVectorNd allDivVecs[StateDim];
     
-    # pragma omp parallel for
-    for(int i=0; i<N; ++i){
-      OptErr oe = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
-      allDivVecs[i] =  oe.divs;
+    {
+      #pragma omp parallel for
+      for( int i=0; i<N; ++i){
+	OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
+	allDivVecs[i] = E.divs;
+      }
     }
     
     for(int i=0; i<N; ++i){
+      //OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
       DivVecs[ivintrs] = allDivVecs[i];
       // retain unique vectors in the list of optimum division vectors
       // vectors should not be ones
@@ -300,7 +180,6 @@ public:
   }
 
   
-  
   //----------------------------------------------------------------------
   // Method: compute iou representation
   //----------------------------------------------------------------------
@@ -308,19 +187,18 @@ public:
     SetDivVecs();
     // divide state into iou
     int divs = pow(2,LogDivs);
-    int q, d;
-    q = 0;
-    d = 0;
-    Interval iv, delta;
     
-    # pragma omp parallel for collapse(2)
+# pragma omp parallel for collapse(2)
     for(int i=0; i<intrs; i++){
       for(int j=0; j<divs; j++){
+	int q, d;
+	q = 0;
+	d = 0;
+	Interval iv, delta;
+	IvVectorNd addvect;
 	// reset zonotope
 	iou[i][j] = ZonNd();
-	iou[i][j].resetOrder( zonOrder );
-	q = j;
-	IvVectorNd addvect;
+	q = j;	
 	for(int k=0; k<N; k++){
 	  d = DivVecs[i](k);
 	  iv = bounds(k);
@@ -328,27 +206,28 @@ public:
 	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
 	  q /= d;
 	}
-	
 	// set zonotope value
 	iou[i][j].MinSum(addvect);
+	iou[i][j].reduceOrder(1);
 	iou[i][j].setBounds();
       }
     }
   }
 
+  //----------------------------------------------------------------------
+  // Method: compute iou representation
+  //----------------------------------------------------------------------
   void SetIvIou(){
     SetNewDivVecs();
     // divide state into iou
     int divs = pow(2,LogDivs);
-    int q, d;
-    q = 0;
-    d = 0;
-    Interval iv, delta;
-
-    //# pragma omp parallel for collapse(2)
+#pragma parallel omp for collapse(2)
     for(int i=0; i<ivintrs; i++){
       for(int j=0; j<divs; j++){
-	// reset interval
+	int q, d;
+	q = 0;
+	d = 0;
+	Interval iv, delta;
 	q = j;
 	IvVectorNd addvect;
 	for(int k=0; k<N; k++){
@@ -358,18 +237,11 @@ public:
 	  addvect(k) = hull(iv.lower() + (q%d)*delta,iv.lower() + ((q%d) + 1)*delta);
 	  q /= d;
 	}
-	
-	// set interval initial value
-	iviou[i][j] = addvect;
-	
-	// set to linearization region
+	// assign interval vector value after finding linearization region
 	LinVals L;
-	L.state = iviou[i][j]*1;
+	L.state = addvect;
 	LinRegion(L);
 	iviou[i][j] = L.region;
-	// for(int r=0; r<N; ++r){
-	//   cout << iviou[i][j](r).lower() << " " << iviou[i][j](r).upper() << " ";
-	// }
       }
     }
   }
@@ -381,21 +253,35 @@ public:
   void SetBounds(){
     IvVectorNd U;
     int divs = pow(2,LogDivs);
-    // initialize bounds as union of elements in first intersection
-    U = iou[0][0].bounds;
-    for(int i=1; i<divs; i++){
-      U = join(U,iou[0][i].bounds);
-    }
-    bounds = U*1; // bounds initialized
+    // initialize bounds 
+    bounds *= numeric_limits<double>::infinity()*Interval(-1,1); 
     // recursively get U and intersect with bounds
-    for(int i=1; i<intrs; i++){
-      U = iou[i][0].bounds;
-      for(int j=1; j<divs; j++){
-	U = join(U, iou[i][j].bounds);
+    for(int i=0; i<intrs; i++){
+      if( flagintrs[i] ){
+	U = iou[i][0].bounds;
+	for(int j=1; j<divs; j++){
+	  U = join(U, iou[i][j].bounds);
+	}
       }
       bounds = meet(bounds,U);
     }
     MaxBounds = join( MaxBounds, bounds );
+  }
+  
+  //----------------------------------------------------------------------
+  // set validity of intersecting regions
+  //----------------------------------------------------------------------
+  void SetValidity(){
+    for(int i=0; i<intrs; ++i){
+      if( flagintrs[i] ){
+	IvVectorNd U = iou[i][0].bounds;
+	for(int j=0; j<N; ++j){
+	  U = join( U, bounds );
+	}
+      IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
+      flagintrs[i] = !( is_subset( checkU, U ) );	
+      }
+    }
   }
 
   //----------------------------------------------------------------------
@@ -413,87 +299,95 @@ public:
   }
 
   //----------------------------------------------------------------------
-  // Next IOU set
+  // next zonotope obtained from multiple piecewise linearization
   //----------------------------------------------------------------------
-  void NextIou(){
-    int divs = pow(2,LogDivs);
-    #pragma omp parallel for collapse(2)
-    for(int j=0; j<intrs; ++j){
-      for(int k=0; k<divs; ++k){
-	//iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	//iou[j][k].refine( refmat, invrefmat );
-	LinVals L;
-	L.state = iou[j][k].bounds;
-	L.state = meet(L.state,bounds);
-	DisLin(L,true);
-	iou[j][k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	iou[j][k].MinSum( addvect );
-	iou[j][k].setBounds();
-      }
-    }
-    SetBounds();
-  }
-  
-  void nextIou(){
-    SetIvIou();
-    int divs = pow(2,LogDivs); // no. of divisions
-    //#pragma omp parallel for collapse(2)
-    for(int i=0; i<intrs; ++i){
-      for(int j=0; j<divs; ++j){
-	iou[i][j] = nextZon( iou[i][j] );
-      }
-    }
-    SetBounds();
-  }    
-
-  
-  //----------------------------------------------------------------------
-  // compute next zonotope obtained by multiple piecewise linearization
-  //----------------------------------------------------------------------
-  ZonNd nextZon( const ZonNd &Z ){
-    ZonNd out;
-    out = Z;
-    // find linearization region around Z
-    LinVals L;
-    L.state = out.getBounds();
-    LinRegion( L );
-    
+  void multilin( LinVals &L ){
     int divs = pow(2,LogDivs); // no. of divisions
     
-    vector<vector<IvVectorNd>> errvect; // array of error vectors
-    errvect.resize( ivintrs ); // resize number of intersections
+    // declare array of error vectors after linearization and abstraction
+    vector<IvVectorNd> errvect[StateDim];
 
-    //# pragma omp parallel for
+    {
+    // calculate error array
+      //#pragma omp parallel for
     for(int i=0; i<ivintrs; ++i){
-      //# pragma omp parallel for
+      errvect[i].resize(0);
+      //#pragma omp parallel for
       for(int j=0; j<divs; ++j){
-	LinVals newL;
 	if( is_overlap( iviou[i][j], L.region ) ){
-	  newL.state = meet( iviou[i][j], L.region );	  
+	  LinVals newL;
+	  newL.state = meet( iviou[i][j], L.region );
+	  for(int r=0; r<N; ++r){
+	  }
 	  DisLin( newL, false );
-	  IvVectorNd newerr = ( newL.StMatDis-L.StMatDis )*newL.state + ( newL.InpMatDis-L.InpMatDis )*Inp + newL.ErrDis;
-	  errvect[i].push_back( meet( L.ErrDis, newerr ) );
+	  errvect[i].push_back( (newL.StMatDis - L.StMatDis)*newL.state + (newL.InpMatDis - L.InpMatDis)*Inp + newL.ErrDis );
 	}
-      }      
+      }
+    }
     }
     
-    // compute refined taylor error
-    IvVectorNd referr = L.ErrDis;
+    // compute overall linearization error
+    IvVectorNd linerr = L.ErrDis;
     for(int i=0; i<ivintrs; ++i){
-      cout << errvect[i].size() << "\n";
       IvVectorNd U = errvect[i][0];
       for(int j=1; j<errvect[i].size(); ++j){
     	U = join( U, errvect[i][j] );
       }
-      referr = meet( referr, U );
+      linerr = meet( U, linerr );
     }
 
-    // return transformed zonotope
-    out.prod( L.StMatDis );
-    IvVectorNd addvect = L.InpMatDis*Inp + referr;
-    out.MinSum( addvect  );
-    return out;
+    // reset linearization error
+    L.ErrDis = linerr;
+  }
+  
+  //----------------------------------------------------------------------
+  // Next IOU set
+  //----------------------------------------------------------------------
+  void NextIou(){
+    SetIvIou();
+    int divs = pow(2,LogDivs);
+#pragma omp parallel for
+    for(int j=0; j<intrs; ++j){
+      if( flagintrs[j] ){
+#pragma omp parallel for
+	for(int k=0; k<divs; ++k){
+	  //iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
+	  //iou[j][k].refine( refmat, invrefmat );
+	  LinVals L;
+	  L.state = iou[j][k].bounds;
+	  DisLin(L,true);
+	  iou[j][k].prod(L.StMatDis);
+	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	  iou[j][k].MinSum( addvect );
+	  iou[j][k].reduceOrder(zonOrder);
+	  iou[j][k].setBounds();
+	}
+      }
+    }
+    SetBounds();
+  }
+
+  void nextIou(){
+    SetIvIou();
+    int divs = pow(2,LogDivs);
+#pragma omp parallel for collapse(2)
+    for(int j=0; (j<intrs); ++j){
+      //#pragma omp parallel for
+      for(int k=0; k<divs; ++k){
+	LinVals L;
+	L.state = iou[j][k].bounds;
+	L.state = meet(L.state,bounds);
+	DisLin(L,true);
+	multilin(L);
+	iou[j][k].prod(L.StMatDis);
+	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	iou[j][k].MinSum( addvect );
+	iou[j][k].reduceOrder(zonOrder);
+	iou[j][k].setBounds();
+      }
+    }
+    SetBounds();
+    //SetValidity();
   }
 
   //----------------------------------------------------------------------
@@ -505,13 +399,14 @@ public:
     
     double FlowTime = 0;
     bool do_iter = true;
+    
     while(do_iter){
       // compute next iou
-      NextIou();
-      exit(0);
+      nextIou();
       
       // update clocks
       SimTime += TimeStep;
+      cout << SimTime.upper() << "\n";
       FlowTime += TimeStep;
 
       // update flowpipe and bounds
@@ -530,6 +425,7 @@ public:
   // Simulation
   //----------------------------------------------------------------------
   void simulate(const double T, double IouResetTime){
+
     // initialize flowpipe on first simulation
     if(SimNum==0){
       IvVectorNd InfSt;
