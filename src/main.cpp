@@ -72,6 +72,7 @@ int main(){
   reachobj.zonOrder = zonOrder;
   reachobj.doBloat = false;
   reachobj.bounds = bloatobj.MaxBounds;
+  reachobj.pbounds = bloatobj.pbounds;
   reachobj.MaxBounds = bloatobj.MaxBounds;
   reachobj.SimTime = Interval( 0, tStep );
 

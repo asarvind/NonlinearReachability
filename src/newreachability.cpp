@@ -90,23 +90,15 @@ public:
     SimNum = 0;
     doBloat = true;
 
-    // resize iviou union size and set parallelotope template
-    {
-      ptemp *= 0; invptemp *= 0;
-      int divs = pow(2,LogDivs);
-#pragma omp parallel for
-      for(int i=0; i<N; ++i){
-	iviou[i].resize(divs);
-	ptemp(i,i) = 1; invptemp(i,i) = 1;
+    ifstream dirfile( "src/pywrite/dirmat.txt" );
+    for( int i=0; i<N; ++i ){
+      for( int j=0; j<N; ++j ){
+	double val;
+	dirfile >> val;
+	ptemp(i,j) = Interval(val, val);
       }
     }
-    // set discrete time state action matrix at origin
-    LinVals L;
-    L.state = State;
-    DisLin( L, false );
-    stmatorigin = L.StMatDis;
-    stmatorigin /= stmatorigin.determinant();
-    invmatorigin = stmatorigin.inverse();
+    dirfile.close();
   }
 
   //======================================================================
@@ -299,7 +291,7 @@ public:
     LinRegion( L );
     Interval delta = Interval(0,TimeStep);
     bounds = L.region;
-    pbounds = L.region;
+    pbounds = ptemp*L.region;
     MaxBounds = bounds;
     SimTime = delta;
   }
@@ -417,7 +409,7 @@ public:
 
       // update flowpipe and bounds
       ++FlowItr;
-      (*(FlowItr)).bounds = bounds;
+      (*(FlowItr)).bounds = pbounds;
       MaxBounds = join(bounds,MaxBounds);
       
       // update do_iter
@@ -453,7 +445,7 @@ public:
     if ( doBloat ){
       bloat();
     }
-    (*(FlowItr)).bounds = bounds;
+    (*(FlowItr)).bounds = pbounds;
 
     /* perform recursive flowpipe computation with intermediate
        iou resets */

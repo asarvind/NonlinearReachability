@@ -22,6 +22,8 @@ class writetocpp:
         self.inpVars = inpVars
         self.allVars = allVars
 
+        self.dirmat = dynamics["directions"]
+
         # define initial state bounds
         self.initState = dynamics[ "initState" ]
         
@@ -404,9 +406,8 @@ class writetocpp:
         np.savetxt( "src/pywrite/eigRe.txt", ReV, delimiter = " " )
         np.savetxt( "src/pywrite/eigIm.txt", ImV, delimiter = " " )
 
-        # write state action matrix at origin and its pseudo inverse
-        np.savetxt( "src/pywrite/storigin.txt", stmatorigin, delimiter = " " )
-        np.savetxt( "src/pywrite/invstorigin.txt", np.linalg.pinv( stmatorigin ), delimiter = " " )
+        # write directions matrix at origin and its pseudo inverse
+        np.savetxt( "src/pywrite/dirmat.txt", self.dirmat, delimiter = " " )
         
         
 #end-class====================================================================================================
