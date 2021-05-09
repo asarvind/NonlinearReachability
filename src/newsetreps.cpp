@@ -137,7 +137,7 @@ public:
     bounds = getBounds();
   }
 
-  // compute bounds on the zonotope
+  // compute interval bounds on the zonotope
   IvVectorNd getBounds(){
     IvVectorNd out = center*1;
     
@@ -148,6 +148,40 @@ public:
     }
     out += GenMat*coeffVect;
     return out;
+  }
+
+  // compute directional bounds on the zonotope
+  IvVectorNd getBounds( IvMatrixNNd ptemp ){
+    IvVectorNd out = ptemp*center;
+    
+    Eigen::Matrix<Interval, Eigen::Dynamic, 1 > coeffVect;
+    coeffVect.resize( GenMat.cols(), 1 );
+    for( int i=0; i<GenMat.cols(); ++i ){
+      coeffVect(i) = Interval(-1,1);
+    }
+    out += (ptemp*GenMat)*coeffVect;
+    return out;
+  }
+
+  //----------------------------------------------------------------------
+  // refine zonotope
+  //----------------------------------------------------------------------
+  void refine( IvVectorNd u, IvVectorNd thresbounds, IvMatrixNNd ptemp, IvMatrixNNd invptemp ){
+    prod( ptemp );
+
+    IvVectorNd addvect;
+    addvect *= 0;
+    int ncols = GenMat.cols();
+    for( int i=0; i<dim; ++i ){
+      if( ( u(i).upper() > thresbounds(i).upper() ) || ( u(i).lower() < thresbounds(i).lower() ) ){
+	GenMat.block(i,0,1,ncols) *= 0;
+	center(i) *= 0;
+	addvect(i) = thresbounds(i);
+      }
+    }
+    
+    MinSum( addvect );
+    prod( invptemp );
   }
 
   // close class

@@ -9,6 +9,9 @@ public:
   //======================================================================
   // attributes
   //======================================================================
+
+  // union storage capacity of iou array
+  static const int MaxDivs = 128;
   
   // initial set
   IvVectorNd InitState;
@@ -34,18 +37,21 @@ public:
   // order of zonotope
   int zonOrder;
 
-  // matrix required for refinement
-  IvMatrixNNd refmat;
+  // parallelotopic template and inverse
+  IvMatrixNNd ptemp, invptemp;
 
-  // inverse of matrix used in refinement
-  IvMatrixNNd invrefmat;
+  // parallelotopic bounds
+  IvVectorNd pbounds;
+
+  // discrete state action matrix at origin and its inverse
+  IvMatrixNNd stmatorigin, invmatorigin;
+
+  // iou of parallelotope bounds
+  IvVectorNd piou[StateDim][MaxDivs];
     
   // array of optimal divisions vectors
   IntVectorNd DivVecs[StateDim];
-    
-  // union storage capacity of iou array
-  static const int MaxDivs = 128;
-  
+      
   /* iou array is 2-dimensional array of zonotopes.
      First dimension contains intersections. Second dimension
      contains unions. */
@@ -53,9 +59,6 @@ public:
 
   // iou of interval vectors
   vector<IvVectorNd> iviou[StateDim];
-
-  // validity of indices of intersections
-  bool flagintrs[StateDim];
 
   //----------------------------------------------------------------------
   // Flowpipe
@@ -87,15 +90,23 @@ public:
     SimNum = 0;
     doBloat = true;
 
-    // resize iviou union size and set flagintrs
+    // resize iviou union size and set parallelotope template
     {
+      ptemp *= 0; invptemp *= 0;
       int divs = pow(2,LogDivs);
 #pragma omp parallel for
       for(int i=0; i<N; ++i){
 	iviou[i].resize(divs);
-	flagintrs[i] = true;
+	ptemp(i,i) = 1; invptemp(i,i) = 1;
       }
     }
+    // set discrete time state action matrix at origin
+    LinVals L;
+    L.state = State;
+    DisLin( L, false );
+    stmatorigin = L.StMatDis;
+    stmatorigin /= stmatorigin.determinant();
+    invmatorigin = stmatorigin.inverse();
   }
 
   //======================================================================
@@ -256,38 +267,27 @@ public:
   // Compute bounds from iou
   //----------------------------------------------------------------------
   void SetBounds(){
-    IvVectorNd U;
+    IvVectorNd U, V;
     int divs = pow(2,LogDivs);
-    // initialize bounds 
-    bounds *= numeric_limits<double>::infinity()*Interval(-1,1); 
+    // initialize bounds
+    for( int i=0; i<N; ++i ){
+      bounds(i) = numeric_limits<double>::infinity()*Interval(-1,1);
+      pbounds(i) = numeric_limits<double>::infinity()*Interval(-1,1);
+    }
     // recursively get U and intersect with bounds
     for(int i=0; i<intrs; i++){
-      if( flagintrs[i] ){
-	U = iou[i][0].bounds;
-	for(int j=1; j<divs; j++){
-	  U = join(U, iou[i][j].bounds);
-	}
+      U = iou[i][0].bounds;
+      V = piou[i][0];
+      for(int j=1; j<divs; j++){
+	U = join(U, iou[i][j].bounds);
+	V = join( V, piou[i][j] );
       }
       bounds = meet(bounds,U);
+      pbounds = meet( pbounds, V );
     }
     MaxBounds = join( MaxBounds, bounds );
   }
   
-  //----------------------------------------------------------------------
-  // set validity of intersecting regions
-  //----------------------------------------------------------------------
-  void SetValidity(){
-    for(int i=0; i<intrs; ++i){
-      if( flagintrs[i] ){
-	IvVectorNd U = iou[i][0].bounds;
-	for(int j=1; j<N; ++j){
-	  U = join( U, iou[i][j].bounds );
-	}
-      IvVectorNd checkU = bounds+1e-5*Interval(-1,1)*bounds;
-      flagintrs[i] = !( is_subset( checkU, U ) );	
-      }
-    }
-  }
 
   //----------------------------------------------------------------------
   // bloating initial state
@@ -299,6 +299,7 @@ public:
     LinRegion( L );
     Interval delta = Interval(0,TimeStep);
     bounds = L.region;
+    pbounds = L.region;
     MaxBounds = bounds;
     SimTime = delta;
   }
@@ -345,56 +346,50 @@ public:
     L.ErrDis = linerr;
   }
   
-  //----------------------------------------------------------------------
-  // Next IOU set
-  //----------------------------------------------------------------------
-  void NextIou(){
-    SetIvIou();
-    int divs = pow(2,LogDivs);
-#pragma omp parallel for
-    for(int j=0; j<intrs; ++j){
-      if( flagintrs[j] ){
-#pragma omp parallel for
-	for(int k=0; k<divs; ++k){
-	  //iou[j][k].bounds = meet( bounds, iou[j][k].bounds );
-	  //iou[j][k].refine( refmat, invrefmat );
-	  LinVals L;
-	  L.state = iou[j][k].bounds;
-	  DisLin(L,true);
-	  iou[j][k].prod(L.StMatDis);
-	  IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
-	  iou[j][k].MinSum( addvect );
-	  iou[j][k].reduceOrder(zonOrder);
-	  iou[j][k].setBounds();
-	}
-      }
-    }
-    SetBounds();
-  }
 
   void nextIou(){
     // SetIvIou();
     int divs = pow(2,LogDivs);
 #pragma omp parallel for collapse(2)
     for(int j=0; (j<intrs); ++j){
-      //#pragma omp parallel for
       for(int k=0; k<divs; ++k){
 	LinVals L;
 	L.state = iou[j][k].bounds;
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
-	//multilin(L);
 	iou[j][k].prod(L.StMatDis);
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].MinSum( addvect );
 	iou[j][k].reduceOrder(zonOrder);
 	iou[j][k].setBounds();
+	piou[j][k] = iou[j][k].getBounds( ptemp );
       }
     }
     SetBounds();
-    //SetValidity();
   }
 
+  //----------------------------------------------------------------------
+  // transform paralellotope templates
+  //----------------------------------------------------------------------
+  void setptemp(){
+    // set invptemp
+    invptemp = stmatorigin*invptemp;
+    // set ptemp
+    ptemp = ptemp*invmatorigin;
+  }
+
+  //----------------------------------------------------------------------
+  // refine iou of zonotopes
+  //----------------------------------------------------------------------
+  void refine(){
+#pragma omp parallel for collapse(2)
+    for(int i=0; i<intrs; ++i){
+      for(int j=0; j<intrs; ++j){
+	iou[i][j].refine( piou[i][j], pbounds, ptemp, invptemp );
+      }
+    }
+  }
+  
   //----------------------------------------------------------------------
   // flowpipe computation for a time period
   //----------------------------------------------------------------------
@@ -406,8 +401,14 @@ public:
     bool do_iter = true;
     
     while(do_iter){
+      // set parallelotope template
+      //setptemp();
+      
       // compute next iou
       nextIou();
+
+      // refine iou
+      //refine();
       
       // update clocks
       SimTime += TimeStep;
