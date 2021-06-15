@@ -8,8 +8,8 @@ all: src/ui.py
 	sudo rm -rf src/pywrite
 	python src/ui.py
 
-compile10: src/reachability.cpp
-	g++-10 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/main.cpp -o $(executable)
+compile11: src/reachability.cpp
+	g++-11 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/main.cpp -o $(executable)
 
 compile9: src/reachability.cpp
 	g++-9 -std=c++11 -fopenmp -I $(incPath1) -I $(incPath2) -I $(incPath3) src/main.cpp -o $(executable)

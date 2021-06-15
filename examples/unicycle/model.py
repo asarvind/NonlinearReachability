@@ -5,18 +5,22 @@ model = {}
 
 # define field of autocar
 field = {}
-field["x1"] = "u*cos(r1)/(1+p*r1**2)"
-field["y1"] = "u*sin(r1)/(1+p*r1**2)"
-field["r1"] = "-l*r1"
-field["x2"] = "K*(x1-x2+10)*cos(r2)/(1+p*r2**2)"
-field["y2"] = "K*(x1-x2+10)*sin(r2)/(1+p*r2**2)"
-field["r2"] = "-l*r2"
-field["x3"] = "K*(x2-x3+10)*cos(r3)/(1+p*r3**2)"
-field["y3"] = "K*(x2-x3+10)*sin(r3)/(1+p*r3**2)"
-field["r3"] = "-l*r3"
-field["x4"] = "K*(x3-x4+10)*cos(r4)/(1+p*r4**2)"
-field["y4"] = "K*(x3-x4+10)*sin(r4)/(1+p*r4**2)"
-field["r4"] = "-l*r4"
+field["x1"] = "u*cos(r1)/(1+p*(r1)*r1)"
+field["y1"] = "u*sin(r1)/(1+p*(r1)*r1)"
+#field["r1"] = "-l*(q*r1)"
+field["r1"] = "-l*r1*(q+2*r1**2)"
+field["x2"] = "K*(x1-x2+10)*cos(r2)/(1+p*(r2)*r2)"
+field["y2"] = "K*(x1-x2+10)*sin(r2)/(1+p*(r2)*r2)"
+#field["r2"] = "-l*(q*r2)"
+field["r2"] = "-l*r2*(q+2*r2**2)"
+field["x3"] = "K*(x2-x3+10)*cos(r3)/(1+p*(r3)*r3)"
+field["y3"] = "K*(x2-x3+10)*sin(r3)/(1+p*(r3)*r3)"
+#field["r3"] = "-l*(q*r3)"
+field["r3"] = "-l*r3*(q+2*r3**2)"
+field["x4"] = "K*(x3-x4+10)*cos(r4)/(1+p*(r4)*r4)"
+field["y4"] = "K*(x3-x4+10)*sin(r4)/(1+p*(r4)*r4)"
+#field["r4"] = "-l*(q*r4)"
+field["r4"] = "-l*r4*(q+2*r4**2)"
 
 
 model["field"] = field
@@ -26,6 +30,7 @@ model["param"] =  {
     "K" : 0.3,
     "l" : 1,
     "p" : 1,
+    "q" : 0.5,
 }
 
 # define input
@@ -62,13 +67,14 @@ dirmat[1,3] = 1
 dirmat[1,6] = -1
 dirmat[2,6] = 1
 dirmat[2,9] = -1
-dirmat[3,4] = 1
-dirmat[4,7] = 1
-dirmat[5,10] = 1
-dirmat[6,0] = 1;
-dirmat[7,3] = 1;
-dirmat[8,6] = 1;
-dirmat[9,9] = 1;
+dirmat[3,1] = 1
+dirmat[4,4] = 1
+dirmat[5,7] = 1
+dirmat[6,10] = 1
+dirmat[7,0] = 1;
+dirmat[8,3] = 1;
+dirmat[9,6] = 1;
+dirmat[10,9] = 1;
 
 
 model["directions"] = dirmat;
@@ -81,7 +87,7 @@ hypar = {}
 hypar[ "timeStep" ] = 0.04
 hypar[ "maxTime" ] = 5
 hypar[ "zonOrder" ] = 400
-hypar[ "logDivs" ] = 5
+hypar[ "logDivs" ] = 6
 
 #====================================================================================================
 # set server

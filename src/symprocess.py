@@ -424,7 +424,7 @@ def preprocess( model, server = None ):
     # compile c++ file
     if server is None:
         compstart = time.time()
-        os.system( "make compile10" )
+        os.system( "make compile11" )
         compend = time.time()
         print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart  )
         
