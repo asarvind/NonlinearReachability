@@ -1,7 +1,7 @@
 from src.symprocess import *
-from examples.unicycle.model import model, hypar, server
+from examples.autocar.model import autocar, hypar, server
 
 server = None
 
-preprocess( model, server )
-setvals( model, hypar, server )
+preprocess( autocar, server )
+setvals( autocar, hypar, server )

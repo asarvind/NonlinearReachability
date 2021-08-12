@@ -7,10 +7,12 @@
 # include <algorithm> // for random shuffle
 # include <bits/stdc++.h>
 # include <ctime>
+# include <eigen/Eigen/Eigenvalues>
 
 using namespace std;
 using namespace boost::numeric;
 
+//#include "intervalarithmetic/intervalclass.cpp"
 
 /* Specialize is_convertible in Eigen::internal to allow matrix multiplication
    on interval matrices. */
@@ -31,6 +33,7 @@ typedef boost::numeric::interval<
             boost::numeric::interval_lib::rounded_transc_std<double> >,
       boost::numeric::interval_lib::checking_base<double> > >
     Interval;
+
 
 // Overload functions to add interval with integer
 Interval operator+(const Interval &x, const int &y){
@@ -162,6 +165,7 @@ typedef Eigen::Matrix<Interval,StateDim,1> IvVectorNd;
 typedef Eigen::Matrix<Interval,InputDim,1> IvVectorMd;
 typedef Eigen::Matrix<int,StateDim,1> IntVectorNd;
 typedef Eigen::Matrix<double,StateDim,1> VectorNd;
+typedef Eigen::Matrix<double,StateDim,StateDim> MatrixNNd;
 typedef Eigen::Matrix<Interval,pardim,1> IvVectorKd;
 typedef Eigen::Matrix<Interval,tempRows,1> IvVectorLd; // interval vector of bounds on polytope type
 typedef Eigen::Matrix<Interval,Eigen::Dynamic,StateDim> IvMatrixLNd; // template matrix type
@@ -248,7 +252,7 @@ VectorNd radius(const IvVectorNd &x){
 bool is_subset(const IvVectorNd &x, const IvVectorNd &y){
   bool out = true;
   for(int i=0; i<StateDim; ++i){
-    out = out && ( (subset(x(i),y(i))) || ( (x(i).upper() == y(i).upper()) && (x(i).lower() == y(i).lower()) ) );
+    out = out && (x(i).upper()<=y(i).upper()) && (x(i).lower()>=y(i).lower());
   }
   return out;
 }

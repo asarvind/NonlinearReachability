@@ -296,49 +296,46 @@ public:
     SimTime = delta;
   }
 
-  //----------------------------------------------------------------------
-  // next zonotope obtained from multiple piecewise linearization
-  //----------------------------------------------------------------------
-  void multilin( LinVals &L ){
-    int divs = pow(2,LogDivs); // no. of divisions
-    
-    // declare array of error vectors after linearization and abstraction
-    vector<IvVectorNd> errvect[StateDim];
-
-    {
-    // calculate error array
-      //#pragma omp parallel for
-    for(int i=0; i<ivintrs; ++i){
-      errvect[i].resize(0);
-      //#pragma omp parallel for
-      for(int j=0; j<divs; ++j){
-	if( is_overlap( iviou[i][j], L.region ) ){
-	  LinVals newL;
-	  newL.state = meet( iviou[i][j], L.region );
-	  for(int r=0; r<N; ++r){
-	  }
-	  DisLin( newL, false );
-	  errvect[i].push_back( (newL.StMatDis - L.StMatDis)*newL.state + (newL.InpMatDis - L.InpMatDis)*Inp + newL.ErrDis );
-	}
-      }
-    }
-    }
-    
-    // compute overall linearization error
-    IvVectorNd linerr = L.ErrDis;
-    for(int i=0; i<ivintrs; ++i){
-      IvVectorNd U = errvect[i][0];
-      for(int j=1; j<errvect[i].size(); ++j){
-    	U = join( U, errvect[i][j] );
-      }
-      linerr = meet( U, linerr );
-    }
-
-    // reset linearization error
-    L.ErrDis = linerr;
-  }
+//   void nextIou(int numentry){
+//     // SetIvIou();
+//     int divs = pow(2,LogDivs);
+//     // next state
+// #pragma omp parallel for collapse(2)
+//     for(int j=0; (j<intrs); ++j){
+//       for(int k=0; k<divs; ++k){
+// 	IvMatrixNNd A = eyeN;
+// 	ZonNd addzon = ZonNd();
+// 	ZonNd newzon = iou[j][k];
+// 	newzon.convertToParallelotope();
+// 	newzon.bounds = bounds;
+// 	addzon.bounds = bounds*0;
+// 	LinVals L;
+// 	L.StMatDis = eyeN;
+// 	for(int l=0; l<10; ++l)
+// 	  {
+// 	    addzon.prod(L.StMatDis);
+// 	    newzon.prod(L.StMatDis);
+// 	    IvVectorNd newbounds = A*bounds;
+// 	    L.state = newzon.bounds + addzon.bounds;
+// 	    L.state = meet(newbounds, L.state);
+// 	    DisLin(L,true);
+// 	    A = L.StMatDis*A;
+// 	    IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+// 	    addzon.MinSum( addvect );
+// 	    addzon.setBounds();
+// 	    newzon.setBounds();
+// 	  }
+// 	iou[j][k].prod(A);
+// 	iou[j][k] = MinSum( iou[j][k], addzon );
+// 	iou[j][k].setBounds();
+// 	iou[j][k].reduceOrder(zonOrder);
+// 	piou[j][k] = iou[j][k].getBounds( ptemp );	
+//       }
+//     }
+//     SetBounds();
+//   }
   
-
+  
   void nextIou(){
     // SetIvIou();
     int divs = pow(2,LogDivs);
@@ -352,22 +349,12 @@ public:
 	iou[j][k].prod(L.StMatDis);
 	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
 	iou[j][k].MinSum( addvect );
-	iou[j][k].reduceOrder(zonOrder);
 	iou[j][k].setBounds();
+	iou[j][k].reduceOrder(zonOrder);
 	piou[j][k] = iou[j][k].getBounds( ptemp );
       }
     }
     SetBounds();
-  }
-
-  //----------------------------------------------------------------------
-  // transform paralellotope templates
-  //----------------------------------------------------------------------
-  void setptemp(){
-    // set invptemp
-    invptemp = stmatorigin*invptemp;
-    // set ptemp
-    ptemp = ptemp*invmatorigin;
   }
 
   //----------------------------------------------------------------------

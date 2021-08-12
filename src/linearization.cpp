@@ -86,7 +86,7 @@ public:
     Interval out = Interval(0,0);
     IvVectorNd ErrVect = ContError(State,Inp,StError,InpCenter,parvals);
     for(int i=0; i<StateDim; ++i){
-      out += pow(ErrVect(i)*ReDir(i), 2) + pow(ErrVect(i)*ImDir(i), 2);
+      out = out + pow(ErrVect(i)*ReDir(i), 2) + pow(ErrVect(i)*ImDir(i), 2);
     }
     out = sqrt(out);
     out = hull(-1*out,out);
@@ -171,14 +171,15 @@ public:
     bool valid = false;
 
     // New region
-    IvVectorNd transIv = L.state;
+    IvVectorNd transIv = L.state;    
+    
     int tdivs = 40;
     Interval gap = Interval(TimeStep,TimeStep)/Interval(tdivs,tdivs);
     for( int i=0; i<tdivs; ++i ){
       Interval delta = hull( i*gap, (i+1)*gap );
       L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
       L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
-      IvVectorNd joinvect = L.ErrCont*delta + L.InpMatDis*Inp + L.StMatDis*L.state;
+      IvVectorNd joinvect = L.InpMatDis*Inp + L.StMatDis*L.state;
       transIv = join( L.state, joinvect );
     }
 
@@ -189,8 +190,20 @@ public:
       Interval epsilon = pow(delta,3);
       // intial state and input action matrices
       // Discrete time error
+      
+      // IvMatrixNNd A1 = eyeN + A*TimeStep;
+      // Interval it(TimeStep, TimeStep);
+      // IvMatrixNNd mA = (eyeN*it + A*(it*it)/2);
+      // IvMatrixNNd A2 = eyeN + A*TimeStep + A*A*it/2;
+      // L.InpMatDis = mA*L.InpMatCont;
+      // IvVectorNd rem = mA*L.ErrCont + SqA*A*L.region*epsilon/6 + ( (SqA*L.InpMatCont)*Inp + SqA*L.ErrCont )*epsilon/2;
+      // IvVectorNd st1 = A1*L.state;
+      // IvVectorNd st2 = A2*L.state;
+      // IvVectorNd NextRegion = L.InpMatDis*Inp + join(st2, st2) + rem;
+
+      
       IvVectorNd NextRegion =
-	 transIv + ( A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
+	transIv + ( L.ErrCont*Interval(TimeStep,TimeStep) + A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
 			       SqA*A*L.region*epsilon/6 +
 			       SqA*L.InpMatCont*Inp*epsilon/2 );
       

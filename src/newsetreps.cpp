@@ -30,30 +30,44 @@ public:
   //----------------------------------------------------------------------
   // reduce order of zonotope below a threshold
   //----------------------------------------------------------------------
+
+  double measuretoreduce( IvVectorNd x )
+  {
+    IvVectorNd z;
+    for( int i=0; i<StateDim; ++i){
+      z(i) = x(i)/( bounds(i)+1e-12 );       
+    }
+    IvVectorNd y = z/(z.norm() + 1e-12);
+    for( int i=0; i<StateDim; ++i){
+      y(i) = 1-y(i);       
+    }    
+    return y.norm().upper()*z.norm().upper();
+  }
   
   void reduceOrder( int order ){
     if( GenMat.cols() > dim*order ){
-      Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat = GenMat;
-      int prevcols = newGenMat.cols();
+      // Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat = GenMat;
+      // int prevcols = newGenMat.cols();
 
-      // assign vector of magnitudes and indices for columns
-      vector< pair< double, int > > vals;
-      vals.resize( prevcols );
-      for( int i=0; i<prevcols; ++i ){
-	vals[i].first = ( newGenMat.block( 0,i,dim,1 ).norm() ).upper();
-	vals[i].second = i;
-      }
+      // // assign vector of magnitudes and indices for columns
+      // vector< pair< double, int > > vals;
+      // vals.resize( prevcols );
+      // for( int i=0; i<prevcols; ++i ){
+      // 	IvVectorNd colvect = newGenMat.block( 0,i,dim,1 ) ;
+      // 	vals[i].first = measuretoreduce( colvect );
+      // 	vals[i].second = i;
+      // }
 
-      // sort the vals vector in descending order
-      sort( vals.begin(), vals.end() );
-      reverse( vals.begin(), vals.end() );
+      // // sort the vals vector in descending order
+      // //sort( vals.begin(), vals.end() );
+      // //reverse( vals.begin(), vals.end() );
 
-      // reorder zonotope
-      for( int i=0; i<dim; ++i ){
-	for( int j=0; j<prevcols; ++j ){
-	  GenMat(i,j) = newGenMat(i, vals[j].second);
-	}
-      }
+      // // reorder zonotope
+      // for( int i=0; i<dim; ++i ){
+      // 	for( int j=0; j<prevcols; ++j ){
+      // 	  GenMat(i,j) = newGenMat(i, vals[j].second);
+      // 	}
+      // }
 
       // compute box approximation of last genmat
       Eigen::Matrix<Interval, Eigen::Dynamic, 1 > coeffVect;
@@ -76,22 +90,58 @@ public:
 	}
       }
 
-      Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > leftGenMat;
+      Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat;
       if(order >1){	
-	leftGenMat.resize( dim, dim*order-dim );
-	leftGenMat << GenMat.block(0, 0, dim, dim*order - dim );
+	newGenMat.resize( dim, dim*order-dim );
+	newGenMat << GenMat.block(0, 0, dim, dim*order - dim );
       }
       GenMat.resize( dim, order*dim );
       
       // reduce order
       if( order > 1 ){
-	GenMat << leftGenMat, errmat;
+	GenMat << errmat, newGenMat;
       }
       else{
 	GenMat << errmat;
       }
     }
   }
+
+  // void convertToParallelotope()
+  // {
+  //   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> newGenMat;
+  //   newGenMat.resize(StateDim, GenMat.cols());
+  //   for(int i=0; i<dim; ++i)
+  //     {
+  // 	for(int j=0; j<GenMat.cols(); ++j)
+  // 	  {
+  // 	    newGenMat(i,j) = GenMat(i,j).upper();
+  // 	  }
+  //     }
+  //   MatrixNNd sqmat = newGenMat*( newGenMat.transpose() );
+  //   Eigen::SelfAdjointEigenSolver<MatrixNNd> decop;
+  //   decop.compute(sqmat);
+  //   MatrixNNd eigv = decop.eigenvectors();
+  //   Eigen::Matrix<Interval, Eigen::Dynamic, Eigen::Dynamic> newCoeffVect;
+  //   newCoeffVect.resize(GenMat.cols(), 1);
+  //   IvMatrixNNd ptopeGenMat;
+  //   for(int i=0; i<GenMat.cols(); ++i)
+  //     {
+  // 	newCoeffVect(i) = Interval(-1,1);
+  //     }
+  //   for(int i=0; i<dim; ++i){
+  //     for(int j=0; j<dim; ++j)
+  // 	{
+  // 	  ptopeGenMat(i,j) = eigv(i,j);
+  // 	}
+  //   }
+  //   IvVectorNd scalevect = ( ( ptopeGenMat.inverse() )*GenMat )*newCoeffVect;
+  //   for(int i=0; i<dim; ++i)
+  //     {
+  // 	ptopeGenMat.block(0,i,dim,1) *= scalevect(i).upper();
+  //     }
+  //   GenMat = ptopeGenMat;
+  // }
   
   //----------------------------------------------------------------------
   // Pre-multiply with a matrix
@@ -127,7 +177,7 @@ public:
     // concatenate matrix at the end
     Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat = GenMat;
     GenMat.resize( dim, GenMat.cols() + dim );
-    GenMat << newGenMat, errmat;
+    GenMat << errmat, newGenMat;
   }
 
   //----------------------------------------------------------------------
@@ -186,3 +236,22 @@ public:
 
   // close class
 };
+
+//------------------------------------------------------------------------------------------<<<<
+
+//------------------------------------------------------------------------------------------>>>>
+// Minkowski sum of two zonotopes
+//------------------------------------------------------------------------------------------
+
+ZonNd MinSum( ZonNd X, ZonNd Y )
+{
+  ZonNd out;
+  out.center = X.center + Y.center;
+  out.GenMat.resize( X.dim, X.GenMat.cols() + Y.GenMat.cols() );
+  out.GenMat << Y.GenMat, X.GenMat;
+  return out;
+}
+
+//------------------------------------------------------------------------------------------<<<<
+
+

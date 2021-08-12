@@ -1,3 +1,5 @@
+import  numpy as np
+
 #====================================================================================================
 # define autocar model
 #====================================================================================================
@@ -41,18 +43,22 @@ initState[ "x1" ] = [-1 , 1]
 initState[ "x2" ] = [-0.5, 0.5]
 initState[ "x3" ] = [-0.5, 0.5]
 initState[ "x4" ] = [5, 6]
-initState[ "x5" ] = [-0.15, 0.15]
-initState[ "x6" ] = [-0.2, 0.2]
-initState[ "x7" ] = [-0.15, 0.15]
+initState[ "x5" ] = [-0.2, 0.2]
+initState[ "x6" ] = [-0.25, 0.25]
+initState[ "x7" ] = [-0.2, 0.2]
 
 autocar[ "initState" ] = initState
+
+# directions of flowpipe bounds
+dirmat = np.identity(7);
+autocar["directions"] = dirmat;
 
 #====================================================================================================
 # define hyperparameters
 #====================================================================================================
 hypar = {}
 hypar[ "timeStep" ] = 0.005
-hypar[ "maxTime" ] = 0.5
+hypar[ "maxTime" ] = 1
 hypar[ "zonOrder" ] = 400
 hypar[ "logDivs" ] = 3
 hypar[ "refineFact" ] = 0.25
