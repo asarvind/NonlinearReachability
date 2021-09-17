@@ -58,8 +58,8 @@ autocar["directions"] = dirmat;
 #====================================================================================================
 hypar = {}
 hypar[ "timeStep" ] = 0.005
-hypar[ "maxTime" ] = 1
-hypar[ "zonOrder" ] = 400
+hypar[ "maxTime" ] = 5
+hypar[ "zonOrder" ] = 200
 hypar[ "logDivs" ] = 3
 hypar[ "refineFact" ] = 0.25
 

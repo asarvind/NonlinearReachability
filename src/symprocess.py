@@ -387,9 +387,9 @@ class writetocpp:
         # compute value replacements in state action matrix
         repl = []
         for ky in self.field:
-            repl.append( self.initState[ ky ][0] )
+            repl.append( (self.initState[ ky ][0]+self.initState[ ky ][1])/2 )
         for ky in self.inp:
-            repl.append( self.inp[ ky ][0] )
+            repl.append( (self.inp[ ky ][0]+self.inp[ ky ][0])/2 )
         for v in self.paramVars:
             repl.append( self.param[ str(v) ] )
 
@@ -397,14 +397,17 @@ class writetocpp:
         stmatfn = lambdify( self.allVars + self.paramVars, self.stJacobian, modules="numpy" )
         stmatorigin = stmatfn( *repl )
 
+        # polar decomposition
+        Q, _ = scl.polar(stmatorigin)
+        
         # compute eigenvectors
         _,V = np.linalg.eig(stmatorigin);
         ReV = np.real(V);
         ImV = np.imag(V);
 
         # write eigenvectors to txt file (1st column is real part, 2nd column is imag part)
-        np.savetxt( "src/pywrite/eigRe.txt", ReV, delimiter = " " )
-        np.savetxt( "src/pywrite/eigIm.txt", ImV, delimiter = " " )
+        np.savetxt( "src/pywrite/eigRe.txt", np.transpose(stmatorigin), delimiter = " " )
+        np.savetxt( "src/pywrite/eigIm.txt", ImV*0, delimiter = " " )
 
         # write directions matrix at origin and its pseudo inverse
         np.savetxt( "src/pywrite/dirmat.txt", self.dirmat, delimiter = " " )

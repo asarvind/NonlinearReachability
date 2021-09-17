@@ -1,3 +1,38 @@
+void removeRow(Eigen::Matrix<Interval, Eigen::Dynamic, Eigen::Dynamic>& matrix, unsigned int rowToRemove)
+{
+    unsigned int numRows = matrix.rows()-1;
+    unsigned int numCols = matrix.cols();
+
+    if( rowToRemove < numRows )
+        matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
+void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
+{
+    unsigned int numRows = matrix.rows()-1;
+    unsigned int numCols = matrix.cols();
+
+    if( rowToRemove < numRows )
+        matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
+void removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove)
+{
+    unsigned int numRows = matrix.rows();
+    unsigned int numCols = matrix.cols()-1;
+
+    if( colToRemove < numCols )
+        matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.block(0,colToRemove+1,numRows,numCols-colToRemove);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
+
+
 //****************************************************************************************************
 // Zonotope class
 //****************************************************************************************************
@@ -28,46 +63,11 @@ public:
   //======================================================================
 
   //----------------------------------------------------------------------
-  // reduce order of zonotope below a threshold
+  // reduce order of zonotope
   //----------------------------------------------------------------------
-
-  double measuretoreduce( IvVectorNd x )
-  {
-    IvVectorNd z;
-    for( int i=0; i<StateDim; ++i){
-      z(i) = x(i)/( bounds(i)+1e-12 );       
-    }
-    IvVectorNd y = z/(z.norm() + 1e-12);
-    for( int i=0; i<StateDim; ++i){
-      y(i) = 1-y(i);       
-    }    
-    return y.norm().upper()*z.norm().upper();
-  }
   
   void reduceOrder( int order ){
     if( GenMat.cols() > dim*order ){
-      // Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat = GenMat;
-      // int prevcols = newGenMat.cols();
-
-      // // assign vector of magnitudes and indices for columns
-      // vector< pair< double, int > > vals;
-      // vals.resize( prevcols );
-      // for( int i=0; i<prevcols; ++i ){
-      // 	IvVectorNd colvect = newGenMat.block( 0,i,dim,1 ) ;
-      // 	vals[i].first = measuretoreduce( colvect );
-      // 	vals[i].second = i;
-      // }
-
-      // // sort the vals vector in descending order
-      // //sort( vals.begin(), vals.end() );
-      // //reverse( vals.begin(), vals.end() );
-
-      // // reorder zonotope
-      // for( int i=0; i<dim; ++i ){
-      // 	for( int j=0; j<prevcols; ++j ){
-      // 	  GenMat(i,j) = newGenMat(i, vals[j].second);
-      // 	}
-      // }
 
       // compute box approximation of last genmat
       Eigen::Matrix<Interval, Eigen::Dynamic, 1 > coeffVect;
@@ -107,44 +107,104 @@ public:
     }
   }
 
-  // void convertToParallelotope()
-  // {
-  //   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> newGenMat;
-  //   newGenMat.resize(StateDim, GenMat.cols());
-  //   for(int i=0; i<dim; ++i)
-  //     {
-  // 	for(int j=0; j<GenMat.cols(); ++j)
-  // 	  {
-  // 	    newGenMat(i,j) = GenMat(i,j).upper();
-  // 	  }
-  //     }
-  //   MatrixNNd sqmat = newGenMat*( newGenMat.transpose() );
-  //   Eigen::SelfAdjointEigenSolver<MatrixNNd> decop;
-  //   decop.compute(sqmat);
-  //   MatrixNNd eigv = decop.eigenvectors();
-  //   Eigen::Matrix<Interval, Eigen::Dynamic, Eigen::Dynamic> newCoeffVect;
-  //   newCoeffVect.resize(GenMat.cols(), 1);
-  //   IvMatrixNNd ptopeGenMat;
-  //   for(int i=0; i<GenMat.cols(); ++i)
-  //     {
-  // 	newCoeffVect(i) = Interval(-1,1);
-  //     }
-  //   for(int i=0; i<dim; ++i){
-  //     for(int j=0; j<dim; ++j)
-  // 	{
-  // 	  ptopeGenMat(i,j) = eigv(i,j);
-  // 	}
-  //   }
-  //   IvVectorNd scalevect = ( ( ptopeGenMat.inverse() )*GenMat )*newCoeffVect;
-  //   for(int i=0; i<dim; ++i)
-  //     {
-  // 	ptopeGenMat.block(0,i,dim,1) *= scalevect(i).upper();
-  //     }
-  //   GenMat = ptopeGenMat;
-  // }
+  void newReduceOrder(int order)
+  {
+    if( GenMat.cols() > dim*order )
+      {
+	Eigen::Matrix<Interval, Eigen::Dynamic, Eigen::Dynamic> G(dim, GenMat.cols());
+	G = GenMat;
+	// compute normalized matrix
+	Eigen::MatrixXd M(G.rows(), G.cols());
+	for(int i=0; i<G.rows(); ++i)
+	  {
+	    double r = (G.block(i,0,1,G.cols()).lpNorm<1>()).upper() + 1e-6;
+	    for(int j=0; j<G.cols(); ++j)
+	      {
+		M(i,j) = G(i,j).upper()/r;
+	      }
+	  }
+	
+	// rearrange columns
+	vector< pair<double, int> > normvals;
+	normvals.resize(G.cols());
+	for(int i=0; i<G.cols(); ++i)
+	  {
+	    VectorNd thiscol = M.block(0,i,dim,1);
+	    normvals[i] = make_pair( thiscol.lpNorm<1>()-thiscol.lpNorm<Eigen::Infinity>(), i );
+	  }
+	sort(normvals.begin(), normvals.end(), greater< pair<double,int> >());
+	for(int i=0; i<G.cols(); ++i)
+	  {
+	    GenMat.block(0,i,dim,1) = G.block(0,normvals[i].second,dim,1);
+	  }
+
+	// compute box approximation of last genmat
+	Eigen::Matrix<Interval, Eigen::Dynamic, 1 > coeffVect;
+	int cls = GenMat.cols() - dim*order + dim;
+	coeffVect.resize( cls, 1 );
+	for( int i=0; i<cls; ++i ){
+	  coeffVect(i,0) = Interval(-1,1);
+	}
+	IvVectorNd b = GenMat.block( 0, dim*order-dim, dim, cls )*coeffVect;
+	IvMatrixNNd errmat;
+	for( int i=0; i<dim; ++i ){
+	  for( int j=0; j<dim; ++j ){
+	    if( i != j){
+	      errmat(i,j) = Interval(0, 0);
+	    }
+	    else{
+	      errmat(i,j) = ( width( b(i) )/2 )*Interval(1,1);
+	    }
+	  }
+	}
+	
+	// compute rest of generator matrix
+	Eigen::Matrix< Interval, Eigen::Dynamic, Eigen::Dynamic > newGenMat;
+	if(order >1){	
+	  newGenMat.resize( dim, dim*order-dim );
+	  newGenMat << GenMat.block(0, 0, dim, dim*order - dim );
+	}
+	      
+	// reduce order
+	GenMat.resize( dim, order*dim );
+	if( order > 1 ){
+	  GenMat << errmat, newGenMat;
+	}
+	else{
+	  GenMat << errmat;
+	}	
+      }
+  }
+
+  void pruneRows(int num)
+  {
+    IvVectorNd addvect;
+    addvect *= 0;
+    int zonorder = GenMat.cols();
+    for(int i=0; i<dim; ++i)
+      {
+	// compute cost pairs
+	vector<pair<double,int>> vals;
+	vals.resize(zonorder);
+	for(int j=0; j<zonorder; ++j)
+	  {
+	    vals[j].first = std::abs(GenMat(i,j).upper());
+	    vals[j].second = j;
+	  }
+	// rearrange cost pairs
+	sort(vals.begin(), vals.end());
+	// prune and assign remainder
+	for(int j=0; j<zonorder-num*dim; ++j)
+	  {
+	    addvect(i) += GenMat(i,vals[j].second)*Interval(-1,1);
+	    GenMat(i,vals[j].second) = 0;
+	  }
+      }
+    MinSum(addvect);
+  }
   
   //----------------------------------------------------------------------
-  // Pre-multiply with a matrix
+  // Left-multiply with a matrix
   //----------------------------------------------------------------------
   void prod(const IvMatrixNNd &M){
     center = M*center;
@@ -191,7 +251,7 @@ public:
   IvVectorNd getBounds(){
     IvVectorNd out = center*1;
     
-    Eigen::Matrix<Interval, Eigen::Dynamic, 1 > coeffVect;
+    Eigen::Matrix<Interval, Eigen::Dynamic, 1> coeffVect;
     coeffVect.resize( GenMat.cols(), 1 );
     for( int i=0; i<GenMat.cols(); ++i ){
       coeffVect(i) = Interval(-1,1);
@@ -216,22 +276,22 @@ public:
   //----------------------------------------------------------------------
   // refine zonotope
   //----------------------------------------------------------------------
-  void refine( IvVectorNd u, IvVectorNd thresbounds, IvMatrixNNd ptemp, IvMatrixNNd invptemp ){
-    prod( ptemp );
-
+  void refine( IvVectorNd ioubounds, double rho)
+  {
+    // refine bounds
+    IvVectorNd zonbounds = getBounds();
     IvVectorNd addvect;
     addvect *= 0;
     int ncols = GenMat.cols();
     for( int i=0; i<dim; ++i ){
-      if( ( u(i).upper() > thresbounds(i).upper() ) || ( u(i).lower() < thresbounds(i).lower() ) ){
+      if( width( zonbounds(i) ) > ( 1+rho )*width( ioubounds(i) ) ){
 	GenMat.block(i,0,1,ncols) *= 0;
 	center(i) *= 0;
-	addvect(i) = thresbounds(i);
+	addvect(i) = ioubounds(i);
       }
     }
     
     MinSum( addvect );
-    prod( invptemp );
   }
 
   // close class
@@ -253,5 +313,32 @@ ZonNd MinSum( ZonNd X, ZonNd Y )
 }
 
 //------------------------------------------------------------------------------------------<<<<
+
+//******************************************************************************************>>>>
+//union zonotope along with validity vector
+//******************************************************************************************
+struct uzonNd
+{
+  //----------------------------------------------------------------------
+  // members
+  //----------------------------------------------------------------------
+
+  std::vector<ZonNd> sets;
+
+  IvVectorNd bounds;
+
+  double cost;
+
+  uzonNd()
+  {
+    cost = 0;
+  }
+  
+};
+
+//------------------------------------------------------------------------------------------<<<<
+
+
+
 
 

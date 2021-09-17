@@ -55,7 +55,7 @@ public:
     for(int i=0; i<N; ++i){
       for(int j=0; j<N; ++j){
 	eigReFile >> EvRe[i](j);
-	eigImFile >> EvIm[j][i];
+	eigImFile >> EvIm[i](j);
       }
     }
     eigReFile.close();
@@ -86,9 +86,8 @@ public:
     Interval out = Interval(0,0);
     IvVectorNd ErrVect = ContError(State,Inp,StError,InpCenter,parvals);
     for(int i=0; i<StateDim; ++i){
-      out = out + pow(ErrVect(i)*ReDir(i), 2) + pow(ErrVect(i)*ImDir(i), 2);
+      out = out + ErrVect(i)*ReDir(i);
     }
-    out = sqrt(out);
     out = hull(-1*out,out);
     return out;
   }
