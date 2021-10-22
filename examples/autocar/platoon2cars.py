@@ -82,7 +82,7 @@ hypar = {}
 hypar[ "timeStep" ] = 0.005
 hypar[ "maxTime" ] = 5
 hypar[ "zonOrder" ] = 100
-hypar[ "logDivs" ] = 1
+hypar[ "logDivs" ] = 3
 
 #====================================================================================================
 # set server
