@@ -376,11 +376,11 @@ public:
 
       // refine iou
       refine();
-      cout << "iou size is " << iou.size() << "\n";     
+      // cout << "iou size is " << iou.size() << "\n";     
       
       // update clocks
       SimTime += TimeStep;
-      cout << SimTime.upper() << "\n";
+      // cout << SimTime.upper() << "\n";
       FlowTime += TimeStep;
 
       // update flowpipe and bounds
