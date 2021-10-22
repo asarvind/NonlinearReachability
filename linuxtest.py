@@ -5,4 +5,4 @@ server = None
 compiler = "g++-9"
 
 preprocess( autocar, server )
-setvals( autocar, hypar, server )
+setvals( autocar, hypar, server, compiler )
