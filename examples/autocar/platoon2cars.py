@@ -50,21 +50,22 @@ autocar["inp"] = {
 
 # define initial state of autocar
 initState = {}
+s = 1
 initState[ "x1" ] = [0, 0]
 #initState[ "x2" ] = [0, 0]
-initState[ "x3" ] = [-0.5, 0.5]
+initState[ "x3" ] = [-0.5*s, 0.5*s]
 initState[ "x4" ] = [8, 9]
-initState[ "x5" ] = [-0.2, 0.2]
-initState[ "x6" ] = [-0.25, 0.25]
-initState[ "x7" ] = [-0.2, 0.2]
+initState[ "x5" ] = [-0.2*s, 0.2*s]
+initState[ "x6" ] = [-0.25*s, 0.25*s]
+initState[ "x7" ] = [-0.2*s, 0.2*s]
 
 initState[ "y1" ] = [-25 , -25]
 #initState[ "y2" ] = [-0.5, 0.5]
-initState[ "y3" ] = [-0.1, 0.1]
+initState[ "y3" ] = [-0.1*s, 0.1*s]
 initState[ "y4" ] = [5, 9]
-initState[ "y5" ] = [-0.05, 0.05]
-initState[ "y6" ] = [-0.1, 0.1]
-initState[ "y7" ] = [-0.05, 0.05]
+initState[ "y5" ] = [-0.05*s, 0.05*s]
+initState[ "y6" ] = [-0.1*s, 0.1*s]
+initState[ "y7" ] = [-0.05*s, 0.05*s]
 
 autocar[ "initState" ] = initState
 
@@ -81,7 +82,7 @@ hypar = {}
 hypar[ "timeStep" ] = 0.005
 hypar[ "maxTime" ] = 5
 hypar[ "zonOrder" ] = 100
-hypar[ "logDivs" ] = 0
+hypar[ "logDivs" ] = 1
 
 #====================================================================================================
 # set server
