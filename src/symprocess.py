@@ -418,7 +418,7 @@ class writetocpp:
 #====================================================================================================
 # function to process dynamics
 #====================================================================================================
-def preprocess( model, server = None ):
+def preprocess( model, server = None, compiler = "g++-11" ):
     symstart = time.time() # start timer for symbolic processing
     # perform symbolic processing and write c++ files
     writetocpp( model )
@@ -427,7 +427,10 @@ def preprocess( model, server = None ):
     # compile c++ file
     if server is None:
         compstart = time.time()
-        os.system( "make compile11" )
+        if compiler == "g++-9":
+            os.system( "make compile9" )
+        else:
+            os.system( "make compile11" )
         compend = time.time()
         print( "time for symbolic processing and compiling is ", compend+symend-compstart-symstart  )
         

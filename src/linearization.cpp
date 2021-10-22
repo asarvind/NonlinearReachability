@@ -43,11 +43,10 @@ public:
     parvals = paramValues*1;
     // assign input values
     Inp = Input*1;
-    // assign center of input
-    for(int i=0; i<M; i++){
-      double c = (Inp(i).lower()+Inp(i).upper())/2.0;
-      InpCenter(i) = Interval(c,c);
-    }
+    for(int i=0; i<M; ++i)
+      {
+	InpCenter(i) = Interval((Inp(i).upper()+Inp(i).lower())/2);
+      }
     
     // set eigenvectors
     ifstream eigReFile( "src/pywrite/eigRe.txt" );
