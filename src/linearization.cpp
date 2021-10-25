@@ -22,6 +22,9 @@ public:
   VectorNd EvRe[StateDim];
   VectorNd EvIm[StateDim];
 
+  // order of zonotope
+  int zonOrder;  
+
   //----------------------------------------------------------------------
   // constructor
   //----------------------------------------------------------------------
@@ -59,6 +62,9 @@ public:
     }
     eigReFile.close();
     eigImFile.close();
+
+    // zonotope order
+    zonOrder = 1;
   }
   
   // method to compute bounds on vector field
@@ -116,9 +122,6 @@ public:
     IvMatrixNNd StMatDis; // discrete time state action matrix
     IvMatrixNMd InpMatDis; // discrete time input action matrix
     IvVectorNd ErrDis; // discrete time error
-    IvMatrixNNd InitStMat; // initial discrete state action matrix
-    IvMatrixNMd InitInpMat; // initial discrete input action matrix
-    IvVectorNd MatShiftErr; // error due to shift in state action matrix
   };
 
   
@@ -148,16 +151,28 @@ public:
     }
     IvMatrixNNd A = L.StMatCont;
     IvMatrixNNd SqA = A*A;
+
+    int iter = std::min(5,zonOrder);
+    double t = TimeStep/iter;
     // discrete time action matrices
-    L.StMatDis = eyeN + A*TimeStep + A*A*pow(TimeStep,2)/2;
-    L.InpMatDis = L.InpMatCont*TimeStep + A*L.InpMatCont*pow(TimeStep,2)/2;
+    IvMatrixNNd Adis = eyeN + A*t + A*A*pow(t,2)/2;
+    L.StMatDis = Adis;
+    IvMatrixNNd Apref = eyeN;
+    IvMatrixNMd Bdis = L.InpMatCont*t + A*L.InpMatCont*pow(t,2)/2;
     /* discrete time linearization error*/
     // square of delta
-    Interval epsilon = pow(delta,3);
+    Interval epsilon = pow(Interval(-t,t),3);
     // Discrete time error
-    L.ErrDis =
-      L.ErrCont*TimeStep + ( A*L.ErrCont*pow(TimeStep,2)/2 + SqA*L.ErrCont*epsilon/2 +
+    IvVectorNd errdis =
+      L.ErrCont*t + ( A*L.ErrCont*pow(t,2)/2 + SqA*L.ErrCont*epsilon/2 +
 			     SqA*A*L.region*epsilon/6 + SqA*L.InpMatCont*Inp*epsilon/2 );
+    L.ErrDis = Bdis*Inp + errdis;
+    for(int i=0; i<iter-1; ++i)
+      {
+	L.StMatDis = Adis*L.StMatDis;
+	Apref = Adis*Apref;
+	L.ErrDis += (Apref*Bdis)*Inp + Apref*errdis;
+      }
   }
 
   // method to compute valid region of linearization
@@ -169,36 +184,40 @@ public:
     bool valid = false;
 
     // New region
-    IvVectorNd transIv = L.state;    
+    IvVectorNd transIv = L.state;
+    IvMatrixNNd At = A*TimeStep;
+
+    for(int i=1; i<=2; ++i)
+      {
+	if(i==1)
+	  {
+	    L.StMatDis = eyeN + At;
+	    L.InpMatDis = L.InpMatCont*TimeStep;
+	    transIv = L.StMatDis*L.state + L.InpMatDis*Inp;
+	  }
+	else
+	  {
+	    L.StMatDis += At*At/2;
+	    L.InpMatDis += At*L.InpMatDis;
+	    transIv = L.StMatDis*L.state + L.InpMatDis*Inp;
+	  }
+      }
     
-    int tdivs = 40;
-    Interval gap = Interval(TimeStep,TimeStep)/Interval(tdivs,tdivs);
-    for( int i=0; i<tdivs; ++i ){
-      Interval delta = hull( i*gap, (i+1)*gap );
-      L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
-      L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
-      IvVectorNd joinvect = L.InpMatDis*Inp + L.StMatDis*L.state;
-      transIv = join( L.state, joinvect );
-    }
+    // int tdivs = 40;
+    // Interval gap = Interval(TimeStep,TimeStep)/Interval(tdivs,tdivs);
+    // for( int i=0; i<tdivs; ++i ){
+    //   Interval delta = hull( i*gap, (i+1)*gap );
+    //   L.StMatDis = eyeN + A*delta + A*A*pow(delta,2)/2;
+    //   L.InpMatDis = L.InpMatCont*delta + A*L.InpMatCont*pow(delta,2)/2;
+    //   IvVectorNd joinvect = L.InpMatDis*Inp + L.StMatDis*L.state;
+    //   transIv = join( L.state, joinvect );
+    // }
 
     Interval delta = Interval( 0, TimeStep );
     for(int i=0; i<1000; ++i){
       /* discrete time linearization error*/
       // square of delta
-      Interval epsilon = pow(delta,3);
-      // intial state and input action matrices
-      // Discrete time error
-      
-      // IvMatrixNNd A1 = eyeN + A*TimeStep;
-      // Interval it(TimeStep, TimeStep);
-      // IvMatrixNNd mA = (eyeN*it + A*(it*it)/2);
-      // IvMatrixNNd A2 = eyeN + A*TimeStep + A*A*it/2;
-      // L.InpMatDis = mA*L.InpMatCont;
-      // IvVectorNd rem = mA*L.ErrCont + SqA*A*L.region*epsilon/6 + ( (SqA*L.InpMatCont)*Inp + SqA*L.ErrCont )*epsilon/2;
-      // IvVectorNd st1 = A1*L.state;
-      // IvVectorNd st2 = A2*L.state;
-      // IvVectorNd NextRegion = L.InpMatDis*Inp + join(st2, st2) + rem;
-
+      Interval epsilon = pow(Interval(-TimeStep,TimeStep),3);
       
       IvVectorNd NextRegion =
 	transIv + ( L.ErrCont*Interval(TimeStep,TimeStep) + A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
@@ -211,6 +230,8 @@ public:
       }
       else{
 	NextRegion += Interval(-1,1)*1e-5*NextRegion;
+	IvVectorNd midofregion = middle(L.region);
+	IvVectorNd joinregion = (L.region-midofregion)*1 + midofregion;
 	L.region = join(L.region,NextRegion);
 	ContLin(L,false);
 	valid = false;

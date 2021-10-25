@@ -34,9 +34,6 @@ public:
   // number of elements in intersection
   int ivintrs;  
 
-  // order of zonotope
-  int zonOrder;
-
   // parallelotopic template and inverse
   IvMatrixNNd ptemp, dirtemp;
 
@@ -114,7 +111,7 @@ public:
   /* Compute optimal division vectors along different directions 
      and the number of intersections */
   //----------------------------------------------------------------------
-  void SetDivVecs( vector<uzonNd>&newiou ){
+  void SetDivVecs( vector<uzonNd>&newiou, bool scalarobjective = false ){
     intrs = 0;
     bool unique;
     newiou.clear();
@@ -125,8 +122,14 @@ public:
     {
 #pragma omp parallel for
       for( int i=0; i<N; ++i){
-	OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
-	allDivVecs[i] = E.divs;
+	if (scalarobjective){
+	    OptErr E = OptDivision(bounds,LogDivs);
+	    allDivVecs[i] = E.divs;
+	  }
+	else{
+	  OptErr E = OptDivision(bounds,EvRe[i],EvIm[i],LogDivs);
+	  allDivVecs[i] = E.divs;
+	}
       }
     }
 
@@ -160,7 +163,7 @@ public:
   void SetIou(){
     // divide state into iou
     vector<uzonNd> newiou;
-    SetDivVecs(newiou);
+    SetDivVecs(newiou, false);
     int divs = pow(2,LogDivs);
         
 # pragma omp parallel for
@@ -250,12 +253,13 @@ public:
 	L.state = meet(L.state,bounds);
 	DisLin(L,true);
 	iou[j].sets[k].prod(L.StMatDis);
-	IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	//IvVectorNd addvect = L.InpMatDis*Inp + L.ErrDis;
+	IvVectorNd addvect = L.ErrDis;
 	iou[j].sets[k].MinSum( addvect );
 	iou[j].sets[k].setBounds();
 	iou[j].sets[k].newReduceOrder(zonOrder);	
-	IvVectorNd rectbounds = L.StMatDis*L.state + addvect;
-	iou[j].sets[k].bounds = meet( iou[j].sets[k].bounds, rectbounds );		
+	//IvVectorNd rectbounds = L.StMatDis*L.state + addvect;
+	//iou[j].sets[k].bounds = meet( iou[j].sets[k].bounds, rectbounds );		
 	piou[j][k] = iou[j].sets[k].getBounds( ptemp );
 	IvVectorNd dirbounds = ptemp*iou[j].sets[k].bounds;
 	piou[j][k] = meet( piou[j][k], dirbounds );
@@ -293,7 +297,8 @@ public:
 
   void refine()
   {
-    if(iou.size()<=N)
+    int maxintrs = N;
+    if(iou.size()<=maxintrs)
       {
 	return;
       }
@@ -301,8 +306,9 @@ public:
     vector<uzonNd> newiou = iou;
     iou.clear();
     IvVectorNd ioubounds;
+    bool satbounds = false;
 
-    for(int i=0; i<N; ++i)
+    for(int i=0; not satbounds && iou.size()<maxintrs; ++i)
       {
 	int iousize = newiou.size();
 #pragma omp parallel for
@@ -321,7 +327,7 @@ public:
 	      }
 	    for(int k=0; k<N; ++k)
 	      {
-		newiou[j].cost += pow( width(b(k))/( width(bounds(k)) + 1e-6 ), 2 );
+		newiou[j].cost += pow( width(b(k))/( width(bounds(k)) + 1e-10 ), 1 );
 	      }
 	  }
 	// sort newiou based on cost
@@ -337,21 +343,27 @@ public:
 	  {
 	    ioubounds = meet( ioubounds, newiou[0].bounds );
 	  }
-	// update newiou by removing first element
+	// check whether ioubounds have reached saturation
+	satbounds = true;
+	for(int j=0; j<N; ++j)
+	  {
+	    satbounds = satbounds and (ioubounds(j).upper() <= bounds(j).upper()) and (ioubounds(j).lower() >= bounds(j).lower() );
+	  }
+	// update newiou (not iou) by removing first element
 	newiou.erase(newiou.begin());
       }
     
-    // refine each zonotope in iou
-    int divs = pow(2,LogDivs);
-    int numintrs = iou.size();
-#pragma omp parallel for collapse(2)
-    for(int i=0; i<numintrs; ++i)
-      {
-	for(int j=0; j<divs; ++j)
-	  {
-	    iou[i].sets[j].refine( bounds, 100 );
-	  }
-      }    
+//    // refine each zonotope in iou
+//     int divs = pow(2,LogDivs);
+//     int numintrs = iou.size();
+// #pragma omp parallel for collapse(2)
+//     for(int i=0; i<numintrs; ++i)
+//       {
+// 	for(int j=0; j<divs; ++j)
+// 	  {
+// 	    iou[i].sets[j].refine( bounds, 100 );
+// 	  }
+//       }    
   }
 
     
