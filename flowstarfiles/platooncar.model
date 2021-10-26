@@ -22,12 +22,12 @@ continuous reachability
 	
  setting
  {
-  fixed steps 0.001
+  fixed steps 0.002
   time 5
   remainder estimation 1e-1
   QR precondition
   gnuplot octagon y5,y7
-  fixed orders 4
+  fixed orders 6
   cutoff 1e-7
   precision 100
   output autocar
