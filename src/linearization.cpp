@@ -199,10 +199,9 @@ public:
 	  {
 	    L.StMatDis += At*At/2;
 	    L.InpMatDis += At*L.InpMatDis;
-	    transIv = L.StMatDis*L.state + L.InpMatDis*Inp;
+	    transIv = join(transIv, L.StMatDis*L.state + L.InpMatDis*Inp);
 	  }
       }
-    
     // int tdivs = 40;
     // Interval gap = Interval(TimeStep,TimeStep)/Interval(tdivs,tdivs);
     // for( int i=0; i<tdivs; ++i ){
@@ -218,11 +217,10 @@ public:
       /* discrete time linearization error*/
       // square of delta
       Interval epsilon = pow(Interval(-TimeStep,TimeStep),3);
-      
-      IvVectorNd NextRegion =
-	transIv + ( L.ErrCont*Interval(TimeStep,TimeStep) + A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 +
-			       SqA*A*L.region*epsilon/6 +
-			       SqA*L.InpMatCont*Inp*epsilon/2 );
+
+      IvVectorNd NextRegion = transIv + L.ErrCont*Interval(TimeStep,TimeStep);     
+      NextRegion +=
+	 A*L.ErrCont*pow(delta,2)/2 + SqA*L.ErrCont*epsilon/2 + SqA*A*L.region*epsilon/6 + SqA*L.InpMatCont*Inp*epsilon/2 ;
       
       if(is_subset(NextRegion,L.region)){
 	valid = true;

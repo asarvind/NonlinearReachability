@@ -4,7 +4,7 @@ import  numpy as np
 # define autocar model
 #====================================================================================================
 # initialize autocar
-autocar = {}
+model = {}
 
 # define field of autocar
 field = {}
@@ -25,16 +25,17 @@ field["y5"] = "y6"
 field["y6"] = "mu*m/(Iz*(lr+lf))*(lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg)*y3+(lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg)-lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg))*y7-(lf*lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg) + lr*lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg))*y6/y4)"
 field["y7"]  = "mu/(y4*(lr+lf))*(CSf*(g*lr-(K2*(x4-y4)+u2)*hcg)*y3+(CSr*(g*lf+(K2*(x4-y4)+u2)*hcg)-CSf*(g*lr-(K2*(x4-y4)+u2)*hcg))*y7-(lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg) + lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg))*y6/y4)-y6"
 
-autocar["field"] = field
+model["field"] = field
 
 # define parameters of autocar
-autocar["param"] =  {
+model["param"] =  {
     "g" : 9.81,
     "m" : 1093.3,
     "mu" : 1.0489,
     "lf" : 1.156,
     "lr" : 1.422,
     "hcg" : 0.1,
+    #"hcg" : 0.574,
     "Iz" : 1791.6,
     "CSf" : 20.89,
     "CSr" : 20.89,
@@ -44,7 +45,7 @@ autocar["param"] =  {
 }
 
 # define input of autocar
-autocar["inp"] = {
+model["inp"] = {
     "u1" : [-0.01, 0.01],
     "u2" : [-0.01, 0.01]
 }
@@ -68,12 +69,12 @@ initState[ "y5" ] = [-0.05*s, 0.05*s]
 initState[ "y6" ] = [-0.1*s, 0.1*s]
 initState[ "y7" ] = [-0.05*s, 0.05*s]
 
-autocar[ "initState" ] = initState
+model[ "initState" ] = initState
 
 # directions of flowpipe bounds
 dirmat = np.identity(12);
 dirmat[0,6] = -1;
-autocar["directions"] = dirmat;
+model["directions"] = dirmat;
 
 #====================================================================================================
 # define hyperparameters

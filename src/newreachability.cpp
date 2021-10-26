@@ -397,7 +397,7 @@ public:
 
       // update flowpipe and bounds
       ++FlowItr;
-      (*(FlowItr)).bounds = bounds;
+      (*(FlowItr)).bounds = pbounds;
       MaxBounds = join(bounds,MaxBounds);
       
       // update do_iter

@@ -1,0 +1,69 @@
+continuous reachability
+{
+ state var x1,x3,x4,x5,x6,x7,y1,y3,y4,y5,y6,y7
+
+ par
+ {
+  g = 9.81
+  m = 1093.3
+  mu = 1.0489
+  lf = 1.156
+  lr = 1.422
+  hcg = 0.1
+  Iz = 1791.6
+  CSf = 20.89
+  CSr = 20.89
+  K0 =  4
+  K1 = 0
+  K2 = 3
+  u1 = 0
+  u2 = 0
+ }
+	
+ setting
+ {
+  fixed steps 0.02
+  time 5
+  remainder estimation 1e-1
+  QR precondition
+  gnuplot interval x1,x2
+  fixed orders 9
+  cutoff 1e-7
+  precision 100
+  output autocar
+  print on
+ }
+ 
+ nonpoly ode
+ {
+  x1' = x4*cos(x5+x7)
+  x2' = x4*sin(x5+x7)
+  x3' = -K0*(x5+x7+x3)
+  x4' = (K2*(5.5-x4) + u1)
+  x5' = x6
+  x6' = mu*m/(Iz*(lr+lf))*(lf*CSf*(g*lr-(K2*(5.5-x4) + u1)*hcg)*x3+(lr*CSr*(g*lf+(K2*(5.5-x4) + u1)*hcg)-lf*CSf*(g*lr-(K2*(5.5-x4) + u1)*hcg))*x7-(lf*lf*CSf*(g*lr-(K2*(5.5-x4) + u1)*hcg) + lr*lr*CSr*(g*lf+(K2*(5.5-x4) + u1)*hcg))*x6/x4)
+  x7' = mu/(y4*(lr+lf))*(CSf*(g*lr-(K2*(x4-y4)+u2)*hcg)*y3+(CSr*(g*lf+(K2*(x4-y4)+u2)*hcg)-CSf*(g*lr-(K2*(x4-y4)+u2)*hcg))*y7-(lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg) + lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg))*y6/y4)-y6
+  y1' = y4*cos(y5+y7)
+  y3' = -K0*(y5+y7+y3)
+  y4' = K2*(x4-y4)
+  y5' = y6
+  y6' = mu*m/(Iz*(lr+lf))*(lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg)*y3+(lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg)-lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg))*y7-(lf*lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg) + lr*lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg))*y6/y4)
+  y7'  = mu/(y4*(lr+lf))*(CSf*(g*lr-(K2*(x4-y4)+u2)*hcg)*y3+(CSr*(g*lf+(K2*(x4-y4)+u2)*hcg)-CSf*(g*lr-(K2*(x4-y4)+u2)*hcg))*y7-(lf*CSf*(g*lr-(K2*(x4-y4)+u2)*hcg) + lr*CSr*(g*lf+(K2*(x4-y4)+u2)*hcg))*y6/y4)-y6
+ }
+ 
+ init
+ { 
+  x1 in [-1,1]
+  x3 in [-0.5,0.5]
+  x4 in [8,9]
+  x5 in [-0.3,0.3]
+  x6 in [-0.2,0.2]
+  x7 in [-0.3,0.3]
+  y1 in [-25 , -25]
+  y3 in [-0.1, 0.1]
+  y4 in [5, 9]
+  y5 in [-0.05, 0.05]
+  y6 in [-0.1, 0.1]
+  y7 in [-0.05, 0.05]  
+ }
+}

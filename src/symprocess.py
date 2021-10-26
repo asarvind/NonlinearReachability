@@ -50,8 +50,8 @@ class writetocpp:
 
         # declare Taylor error variables
         self.errVars = {}
-        for v in allVars:
-            self.errVars[ str(v) ] =  var( "e_"+str(v) )        # convert to vector
+        for myvar in allVars:
+            self.errVars[ str(myvar) ] =  var( "e_"+str(myvar) )        # convert to vector
         self.errVarsMat = Matrix( self.N+self.M, 1, list( self.errVars.values() ) )
 
         # state action matrix
@@ -125,22 +125,22 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.field:
-            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+ ky +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.inp:
-            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
+        for ky in self.inp:
+            f.write("Interval "+ ky +"= "+"inp("+str(ind)+");\n")
             ind += 1
             
         # assign values to parameters
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.param:
-            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
+        for ky in self.param:
+            f.write("Interval "+ ky +"= "+"parvals("+str(ind)+");\n")
             ind += 1
         
         # compute vector field bounds
@@ -175,22 +175,22 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.field:
-            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+ ky +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         f.write("// assign values to input symbols \n")
         ind = 0
         # assign values to input symbols
-        for v in self.inp:
-            f.write("Interval "+ v + "= "+"inp("+str(ind)+");\n")
+        for ky in self.inp:
+            f.write("Interval "+ ky + "= "+"inp("+str(ind)+");\n")
             ind += 1
 
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.param:
-            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
+        for ky in self.param:
+            f.write("Interval "+ ky +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # compute matrix
@@ -224,22 +224,22 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.field:
-            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+ ky +"= "+"state("+str(ind)+");\n")
             ind += 1
         f.write("// assign values to input symbols \n")
         ind = 0
         
         # assign values to input symbols
-        for v in self.inp:
-            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
+        for ky in self.inp:
+            f.write("Interval "+ ky +"= "+"inp("+str(ind)+");\n")
             ind += 1
 
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.param:
-            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
+        for ky in self.param:
+            f.write("Interval "+ ky +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # compute matrix
@@ -274,22 +274,22 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.field:
-            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+ ky +"= "+"state("+str(ind)+");\n")
             ind += 1
             
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
         ind = 0
-        for v in self.inp:
-            f.write("Interval "+ v +"= "+"inp("+str(ind)+");\n")
+        for ky in self.inp:
+            f.write("Interval "+ ky +"= "+"inp("+str(ind)+");\n")
             ind += 1
             
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.param:
-            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
+        for ky in self.param:
+            f.write("Interval "+ ky +"= "+"parvals("+str(ind)+");\n")
             ind += 1
 
         # assign values to error symbols
@@ -335,8 +335,8 @@ class writetocpp:
         # assign values to state symbols
         f.write("//assign values to state symbols\n")
         ind = 0;
-        for v in self.field:
-            f.write("Interval "+ v +"= "+"state("+str(ind)+");\n")
+        for ky in self.field:
+            f.write("Interval "+ ky +"= "+"state("+str(ind)+");\n")
             ind += 1
         # assign values to input symbols
         f.write("// assign values to input symbols \n")
@@ -348,8 +348,8 @@ class writetocpp:
         # assign values to parameters
         f.write("// assign values to parameters \n")
         ind = 0
-        for v in self.param:
-            f.write("Interval "+ v +"= "+"parvals("+str(ind)+");\n")
+        for ky in self.param:
+            f.write("Interval "+ ky +"= "+"parvals("+str(ind)+");\n")
             ind += 1
             
         # assign values to error symbols
