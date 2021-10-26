@@ -27,7 +27,7 @@ continuous reachability
   remainder estimation 1e-1
   QR precondition
   gnuplot octagon y5,y7
-  fixed orders 5
+  fixed orders 4
   cutoff 1e-7
   precision 100
   output autocar
