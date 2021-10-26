@@ -37,7 +37,6 @@ continuous reachability
  nonpoly ode
  {
   x1' = x4*cos(x5+x7)
-  x2' = x4*sin(x5+x7)
   x3' = -K0*(x5+x7+x3)
   x4' = (K2*(5.5-x4) + u1)
   x5' = x6
