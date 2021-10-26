@@ -22,7 +22,7 @@ continuous reachability
 	
  setting
  {
-  fixed steps 0.005
+  fixed steps 0.001
   time 5
   remainder estimation 1e-1
   QR precondition
