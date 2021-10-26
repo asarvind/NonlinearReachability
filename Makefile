@@ -25,3 +25,6 @@ rand9: src/randmain.cpp
 execute: $(executable)
 	time ./$(executable)
 
+gitupdate: src/reachability.cpp
+	git add -u; git commit -m "updates"; git push
+
