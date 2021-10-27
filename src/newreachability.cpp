@@ -58,6 +58,9 @@ public:
   // iou of interval vectors
   vector<IvVectorNd> iviou[StateDim];
 
+  // time varying size of iou
+  vector<int> iousize;
+
   //----------------------------------------------------------------------
   // Flowpipe
   //----------------------------------------------------------------------
@@ -372,8 +375,7 @@ public:
   // flowpipe computation for a time period
   //----------------------------------------------------------------------
   void flow(double T, double MaxFlowTime){
-    // set iou
-    //SetIou();
+    iousize.clear();
     
     double FlowTime = 0;
     bool do_iter = true;
@@ -388,6 +390,7 @@ public:
 
       // refine iou
       refine();
+      iousize.push_back(iou.size());
       cout << "iou size is " << iou.size() << "\n";     
       
       // update clocks
@@ -486,8 +489,14 @@ public:
       myfile << ((*itr).time).lower() << "," << ((*itr).time).upper() << "\n";
     }
     myfile.close();
+    // save time varying iousize after refinement
+    myfile.open("results/iousize.txt");
+      for(vector<int>::iterator itr=iousize.begin(); itr!=iousize.end(); ++itr)
+      {
+	myfile << *itr << "\n";
+      }
   }
-
+  
 
   
   // close ioureach class    

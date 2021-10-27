@@ -82,7 +82,7 @@ model["directions"] = dirmat;
 hypar = {}
 hypar[ "timeStep" ] = 0.005
 hypar[ "maxTime" ] = 5
-hypar[ "zonOrder" ] = 50
+hypar[ "zonOrder" ] = 10
 hypar[ "logDivs" ] = 1
 
 #====================================================================================================
