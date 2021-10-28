@@ -25,7 +25,7 @@ continuous reachability
   remainder estimation 1e-2
   QR precondition
   gnuplot interval h , w
-  fixed orders 7
+  fixed orders 4
   cutoff 1e-7
   precision 100
   output quadrotor
