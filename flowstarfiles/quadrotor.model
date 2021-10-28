@@ -1,0 +1,66 @@
+continuous reachability
+{
+ state var p_n,p_e,h,u,v,w,phi,theta,psi,p,q,r
+
+ par
+ {
+  g = 9.81
+  R = 0.1
+  l = 0.5
+  M = 1
+  m = 1.4
+  M_rotor = 0.1
+  Jx = 0.054
+  Jy = 0.054
+  Jz = 0.104
+  u1 = 1
+  u2 = 0
+  u3 = 0
+ }
+	
+ setting
+ {
+  fixed steps 0.01
+  time 5
+  remainder estimation 1e-2
+  QR precondition
+  gnuplot interval h , w
+  fixed orders 7
+  cutoff 1e-7
+  precision 100
+  output quadrotor
+  print on
+ }
+	
+ nonpoly ode
+ {
+  p_n' = u*cos(phi)*cos(theta) - v*(cos(phi)*sin(psi)-cos(psi)*sin(phi)*sin(theta)) + w*(sin(phi)*sin(psi)+cos(phi)*cos(psi)*sin(theta))
+  p_e' = v*(cos(phi)*cos(psi)+sin(phi)*sin(psi)*sin(theta)) + u*cos(theta)*sin(psi) - w*(cos(psi)*sin(phi)-cos(phi)*sin(psi)*sin(theta))                             
+  h' = u*sin(theta) - w*cos(phi)*cos(theta)  - v*cos(theta)*sin(phi)
+  u' = r*v - q*w - g*sin(theta)
+  v' = p*w - r*u + g*cos(theta)*sin(phi)
+  w' = q*u - p*v + g*cos(phi)*cos(theta) - (m*g - 10*(h - u1) + 3*w)/m
+  phi' = p + r*cos(phi)*sin(theta)/cos(theta) + q*sin(phi)*sin(theta)/cos(theta)
+  theta' = q*cos(phi) - r*sin(phi)
+  psi' = r*cos(phi)/cos(theta) + q*sin(phi)/cos(theta)
+  p' = (-(phi - u2) - p)/Jx + q*r*(Jy-Jz)/Jx
+  q' = (-(theta - u3) - q)/Jy + p*r*(Jx-Jz)/Jy
+  r' = 0/Jz + p*q*(Jx - Jy)/Jz
+ }
+ 
+ init
+ {
+  p_n in [-0.8,0.8] 
+  p_e in [-0.8,0.8]
+  h in [-0.8,0.8]
+  u in [-0.8,0.8]
+  v in [-0.8,0.8]
+  w in [-0.8,0.8]
+  phi in [-0.5, 0.5]
+  theta in [-0.5, 0.5]
+  psi in [0.0, 0.0]
+  p in [-1, 1]
+  q in [-1, 1]
+  r in [0.0, 0.0]
+ }
+}
