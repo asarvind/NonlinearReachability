@@ -1,0 +1,59 @@
+continuous reachability
+{
+ state var x1,y1,r1,x2,y2,r2,x3,y3,r3,x4,y4,r4
+
+ par
+ {
+ K = 0.3
+ l = 1
+ u = 5
+ q = 0.5
+ p = 1
+ }
+	
+ setting
+ {
+  fixed steps 0.005
+  time 5
+  remainder estimation 1e-1
+  QR precondition
+  gnuplot octagon x1, x2
+  fixed orders 7
+  cutoff 1e-7
+  precision 100
+  output unicycle
+  print on
+ }
+ 
+nonpoly ode
+{
+x1' = u*cos(r1)/(1+p*(r1^2))
+y1' = u*sin(r1)/(1+p*(r1^2))
+r1' = -l*r1*(q+2*r1^2)
+x2' = K*(x1-x2+10)*cos(r2)/(1+p*(r2^2))
+y2' = K*(x1-x2+10)*sin(r2)/(1+p*(r2^2))
+r2' = -l*r2*(q+2*r2^2)
+x3' = K*(x2-x3+10)*cos(r3)/(1+p*(r3^2))
+y3' = K*(x2-x3+10)*sin(r3)/(1+p*(r3^2))
+r3' = -l*r3*(q+2*r3^2)
+x4' = K*(x3-x4+10)*cos(r4)/(1+p*(r4^2))
+y4' = K*(x3-x4+10)*sin(r4)/(1+p*(r4^2))
+r4' = -l*r4*(q+2*r4^2)
+}
+ 
+ init
+ { 
+  x1 in [60, 70]
+  y1 in [0, 0]
+  r1 in [-0.5,0.5]
+  x2 in [40, 50]
+  y2 in [0,0]
+  r2 in [-0.5,0.5]
+  x3 in [20,30]
+  y3 in [0,0]
+  r3 in [-0.5,0.5]
+  x4 in [0,10]
+  y4 in [0,0]
+  r4 in [-0.5,0.5]
+ }
+}
