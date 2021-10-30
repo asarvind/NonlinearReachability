@@ -18,7 +18,7 @@ continuous reachability
   remainder estimation 1e-1
   QR precondition
   gnuplot octagon x1, x2
-  fixed orders 7
+  fixed orders 4
   cutoff 1e-7
   precision 100
   output unicycle

@@ -1,6 +1,6 @@
 from src.symprocess import *
 #from examples.autocar.platoon2cars import autocar, hypar, server
-from examples.autocar.platoon2cars import model, hypar, server
+from examples.quadrotor.model import model, hypar, server
 
 server = None
 

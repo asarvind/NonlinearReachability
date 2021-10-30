@@ -82,8 +82,8 @@ model["directions"] = dirmat;
 hypar = {}
 hypar[ "timeStep" ] = 0.005
 hypar[ "maxTime" ] = 5
-hypar[ "zonOrder" ] = 10
-hypar[ "logDivs" ] = 1
+hypar[ "zonOrder" ] = 50
+hypar[ "logDivs" ] = 2
 
 #====================================================================================================
 # set server
