@@ -17,7 +17,7 @@ continuous reachability
   time 5
   remainder estimation 1e-1
   QR precondition
-  gnuplot octagon y1, y2
+  gnuplot octagon y3, y4
   fixed orders 4
   cutoff 1e-7
   precision 100
