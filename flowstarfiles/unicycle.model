@@ -1,6 +1,6 @@
 continuous reachability
 {
- state var x1,y1,r1,x2,y2,r2,x3,y3,r3,x4,y4,r4
+ statevar x1,y1,r1,x2,y2,r2,x3,y3,r3,x4,y4,r4
 
  par
  {
